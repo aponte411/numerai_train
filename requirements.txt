@@ -1,0 +1,7 @@
+numerox>=4
+numerapi
+xgboost
+keras
+tensorflow
+pytest
+spotty

@@ -1,0 +1,54 @@
+project:
+    name: numerai-train
+    syncFilters:
+      - exclude:
+          # these directories excluded from synchronization
+          - .git/*
+          - .vscode/*
+          - '*/__pycache__/*'
+  
+  container:
+    # a directory inside the container where the project will be synced
+    projectDir: /workspace/project  
+    # an image with an environment for your project
+    # (or use the `file` parameter to specify a custom Dockerfile)
+    image: 763104351884.dkr.ecr.us-east-1.amazonaws.com/tensorflow-training:1.15.0-gpu-py36-cu100-ubuntu18.04
+    # ports to open (TensorBoard, Jupyter)
+    ports: [6006, 8888]
+    volumeMounts:
+      # a directory inside the container where the "project" volume should be mounted
+      # ("name" should match the volume name from the instance configuration)
+      - name: project
+        mountPath: /workspace/project
+  
+  instances:
+    - name: i2
+      provider: aws
+      parameters:
+        region: us-east-1
+        managedPolicyArns:
+            - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
+        instanceType: p2.xlarge
+        commands: |
+            $(aws ecr get-login --no-include-email --region us-east-1--registry-ids 763104351884)
+
+        # launch an On-Demand instance
+        # (delete this parameter to launch a Spot instance)
+        onDemandInstance: true
+        # a list of EBS volumes to create, attach or restore from a snapshot
+        volumes:
+          # "name" should match the container Volume Mount name
+          # (see the container configuration)
+          - name: project
+            parameters:
+              # size of the volume in GB
+              size: 10
+              # the volume will be retained when the instance is stopped
+              deletionPolicy: retain
+  
+  # custom scripts that can be run remotely using the "spotty run" command
+  scripts:
+    tensorboard: |
+      tensorboard --logdir training
+    jupyter: |
+      jupyter notebook --allow-root --ip 0.0.0.0 --notebook-dir=/workspace/project
