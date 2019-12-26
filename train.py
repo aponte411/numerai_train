@@ -54,7 +54,7 @@ def train_xgboost_model() -> Any:
             raise e
 
         LOGGER.info(f"saving model for {tournament_name}")
-        model.save(f'model_trained_{tournament_name}')
+        model.save(f'xgboost_model_trained_{tournament_name}')
 
 
 def train_keras_model() -> Any:
@@ -100,7 +100,8 @@ def train_lstm_model() -> Any:
                 dfit=data['train'], 
                 tournament=tournament_name,
                 eval_set=eval_set,
-                epochs=100
+                epochs=50,
+                batch_size=30
             )
         except Exception as e:
             LOGGER.error(f"Training failed with {e}")

@@ -1,6 +1,8 @@
 import numerox as nx
+import numpy as np
+import pandas as pd
 import joblib
-from typing import Any
+from typing import Any, Tuple, List
 from datetime import datetime
 
 from sklearn.linear_model import LinearRegression
@@ -128,7 +130,11 @@ class KerasModel(nx.Model):
         
         return model 
 
-    def fit(self, dfit: nx.data.Data, tournament: str, eval_set: Tuple = None):
+    def fit(
+        self, 
+        dfit: nx.data.Data, 
+        tournament: str, 
+        eval_set: Tuple = None) -> Any:
         self.model.fit(
             dfit.x, 
             dfit.y[tournament],
@@ -142,6 +148,7 @@ class KerasModel(nx.Model):
     def fit_predict(self, dfit, dpre, tournament):
 
         # fit is done separately in `.fit()`
+
         yhat = self.model.predict(dpre.x)
 
         return dpre.ids, yhat
@@ -158,16 +165,17 @@ class LSTMModel(nx.Model):
     """Keras LSTM Regressor"""
         
     def __init__(self, time_steps: int = 1):
-        self.params = None
-        self.time_steps = time_steps
-        self.model = self._lstm_model()
-        self.callbacks = None
-        self.train_generator = None 
-        self.eval_generator = None
-        self.logdir = f'LSTM_logs/scalars/{datetime.now().strftime("%Y%m%d-%H%M%S")}'
+        self.params: Any = None
+        self.time_steps: int = time_steps
+        self.model: Sequential = self._lstm_model()
+        self.callbacks: List = None
+        # self.train_generator = None 
+        # self.eval_generator = None
+        # self.test_generator = None
+        self.logdir: str = f'LSTM_logs/scalars/{datetime.now().strftime("%Y%m%d-%H%M%S")}'
 
     def _lstm_model(self):
-        """Returns LSTM model"""
+        """Returns LSTM Sequential model"""
 
         model = Sequential()
         model.add(layers.LSTM(
@@ -218,41 +226,85 @@ class LSTMModel(nx.Model):
         
         return model 
 
+    def prepare_model_data(self, train, eval, test) -> Any:
+        """
+        self.train_generator = dfit
+        self.eval_generator = eval_set
+        self.test_generator = dpre
+        """
+        pass
+
     def fit(
         self, 
         dfit: nx.data.Data, 
         tournament: str, 
         eval_set: Tuple = None,
-        epochs: int = 50):
+        epochs: int = 50,
+        batch_size: int = 30) -> Any:
         """Trains LSTM model using TimeSeriesGenerator"""
 
-        self.train_generator = TimeseriesGenerator(
+        train_generator = TimeseriesGenerator(
             data=dfit.x, 
             targets=dfit.y[tournament],
             length=self.time_steps, 
             sampling_rate=1,
-            batch_size=15)
+            batch_size=batch_size)
 
-        self.eval_generator = TimeseriesGenerator(
+        eval_generator = TimeseriesGenerator(
             data=eval_set[0], 
             targets=eval_set[1],
             length=self.time_steps, 
             sampling_rate=1,
-            batch_size=15)
+            batch_size=batch_size)
                     
         self.model.fit_generator(
-            self.train_generator,
-            steps_per_epoch=len(self.train_generator),
+            train_generator,
+            steps_per_epoch=len(train_generator),
             epochs=epochs,
             verbose=2,
-            validation_data=self.eval_generator,
+            validation_data=eval_generator,
             callbacks=self.callbacks
         )
 
-    def fit_predict(self, dfit, dpre, tournament):
+    def predict(self, dpre: nx.data.Data, tournament: str) -> nx.Prediction:
+        """
+        Alternative to fit_predict() 
+        dpre: must be data['tournament']
+        tournament: can be int or str.
+        """
 
-        # fit is done separately in `.fit()`
-        yhat = self.model.predict(dpre.x)
+        prediction = nx.Prediction()
+        data_predict = dpre.y_to_nan()
+        test_generator = TimeseriesGenerator(
+            data=data_predict.x,
+            targets=data_predict.y[tournament],
+            length=self.time_steps, 
+            sampling_rate=1,
+            batch_size=1
+            )
+        yhat = self.model.predict_generator(test_generator)
+        prediction = prediction.merge_arrays(
+            data_predict.ids, 
+            yhat, 
+            self.name, 
+            tournament)
+
+        return prediction
+
+    def fit_predict(
+        self, 
+        dfit: nx.data.Data, 
+        dpre: nx.data.Data, 
+        tournament: str) -> Tuple[np.array]:
+        """fit is done separately in .fit()"""
+
+        test_generator = TimeseriesGenerator(
+            data=dpre.x,
+            targets=dpre.y[tournament],
+            length=self.time_steps, 
+            sampling_rate=1,
+            batch_size=1)
+        yhat = self.model.predict_generator(test_generator)
 
         return dpre.ids, yhat
 
@@ -333,6 +385,22 @@ class FunctionalLSTMModel(nx.Model):
             validation_data=self.eval_generator,
             callbacks=self.callbacks
         )
+
+    def predict(self, dpre: nx.data.Data, tournament: str) -> pd.DataFrame:
+        """Alternative to fit_predict()"""
+
+        self.test_generator = TimeseriesGenerator(
+            data=dpre.x,
+            targets=dpre.y[tournament],
+            length=self.time_steps, 
+            sampling_rate=1,
+            batch_size=1)
+
+        prediction = self.model.predict_generator(self.test_generator)
+
+        return pd.DataFrame(
+            data={"prediction": prediction}, index=dpre.ids
+            )
 
     def fit_predict(self, dfit, dpre, tournament):
 

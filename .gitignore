@@ -12,7 +12,6 @@ numerai_dataset.zip
 __pycache__/model.cpython-37.pyc
 __pycache__/utils.cpython-37.pyc
 
-model_trained_kazutsugi
-lstm_model_trained
-bidirectional_lstm_model_trained
-
+xgboost_model_trained_kazutsugi
+keras_lstm_model_trained_kazutsugi
+keras_bidirectional_lstm_model_trained_kazutsugi

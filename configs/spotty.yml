@@ -6,6 +6,7 @@ project:
           - .git/*
           - .vscode/*
           - '*/__pycache__/*'
+          - '*.md'
   
   container:
     # a directory inside the container where the project will be synced
