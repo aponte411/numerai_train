@@ -6,12 +6,16 @@ settings.json
 
 .terraform
 
+NumeraiTrainEnv
 numerai_dataset.zip
 
 *.pyc*
 __pycache__/model.cpython-37.pyc
 __pycache__/utils.cpython-37.pyc
+__pycache__
+.pytest_cache
 
 xgboost_model_trained_kazutsugi
+lstm_prediction_model_kazutsugi
 keras_lstm_model_trained_kazutsugi
 keras_bidirectional_lstm_model_trained_kazutsugi

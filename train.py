@@ -115,7 +115,7 @@ def train_bidirectional_lstm_model() -> Any:
     """Trains Bidirectional LSTM model and save weights"""
 
     tournaments, data = prepare_tournament_data()
-    LOGGER.info(tournaments)
+    LOGGER.info(tournaments) 
 
     for tournament_name in tournaments:
         eval_set = (

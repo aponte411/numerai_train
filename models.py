@@ -4,15 +4,15 @@ import pandas as pd
 import joblib
 from typing import Any, Tuple, List
 from datetime import datetime
-
 from sklearn.linear_model import LinearRegression
 from xgboost import XGBRegressor
-
 from keras import layers, Sequential
 from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 from keras.preprocessing.sequence import TimeseriesGenerator
-
 from keras_functional_lstm import LstmModel
+from utils import get_logger
+
+LOGGER = get_logger(__name__)
 
 
 class LinearModel(nx.Model):
@@ -162,17 +162,20 @@ class KerasModel(nx.Model):
 
 
 class LSTMModel(nx.Model):
-    """Keras LSTM Regressor"""
+    """
+    Stacked LSTM network buil with
+    Keras Sequential class. The LSTMModel
+    object inherits functionality from the
+    nx.Model class.
+
+    Reference: numerox/numerox/examples/model.rst
+    """
         
     def __init__(self, time_steps: int = 1):
         self.params: Any = None
         self.time_steps: int = time_steps
         self.model: Sequential = self._lstm_model()
         self.callbacks: List = None
-        # self.train_generator = None 
-        # self.eval_generator = None
-        # self.test_generator = None
-        self.logdir: str = f'LSTM_logs/scalars/{datetime.now().strftime("%Y%m%d-%H%M%S")}'
 
     def _lstm_model(self):
         """Returns LSTM Sequential model"""
@@ -211,7 +214,8 @@ class LSTMModel(nx.Model):
             verbose=1, 
             save_best_only=True
             )
-        tensorboard_callback = TensorBoard(log_dir=self.logdir)
+        logdir = f'LSTM_logs/scalars/{datetime.now().strftime("%Y%m%d-%H%M%S")}'
+        tensorboard_callback = TensorBoard(log_dir=logdir)
         self.callbacks = [
             early_stop, 
             model_checkpoint,
@@ -256,7 +260,8 @@ class LSTMModel(nx.Model):
             length=self.time_steps, 
             sampling_rate=1,
             batch_size=batch_size)
-                    
+
+        LOGGER.info('Training started...')           
         self.model.fit_generator(
             train_generator,
             steps_per_epoch=len(train_generator),
@@ -266,7 +271,7 @@ class LSTMModel(nx.Model):
             callbacks=self.callbacks
         )
 
-    def predict(self, dpre: nx.data.Data, tournament: str) -> nx.Prediction:
+    def predict(self, dpre: nx.data.Data, tournament: str) -> Any:
         """
         Alternative to fit_predict() 
         dpre: must be data['tournament']
@@ -282,14 +287,26 @@ class LSTMModel(nx.Model):
             sampling_rate=1,
             batch_size=1
             )
-        yhat = self.model.predict_generator(test_generator)
-        prediction = prediction.merge_arrays(
-            data_predict.ids, 
-            yhat, 
-            self.name, 
-            tournament)
 
-        return prediction
+        try:
+            LOGGER.info('Inference started...')
+            yhat = self.model.predict_generator(test_generator)
+            LOGGER.info('Inference complete...now preparing predictions for submission')
+            return yhat
+        except Exception as e:
+            LOGGER.error(f'Failure to make predictions with {e}')
+            raise e 
+
+        # try:
+        #     prediction = prediction.merge_arrays(
+        #         data_predict.ids, 
+        #         yhat, 
+        #         self.name, 
+        #         tournament)
+        #     return prediction
+        # except Exception as e:
+        #     LOGGER.error(f'Failure to prepare predictions with {e}')
+        #     raise e
 
     def fit_predict(
         self, 
@@ -324,9 +341,6 @@ class FunctionalLSTMModel(nx.Model):
         self.time_steps = time_steps
         self.model = self._functional_lstm_model()
         self.callbacks = None
-        self.train_generator = None 
-        self.eval_generator = None
-        self.logdir = f'FLSTM_logs/scalars/{datetime.now().strftime("%Y%m%d-%H%M%S")}'
 
     def _functional_lstm_model(self):
         """Returns Functional LSTM model"""
@@ -340,7 +354,8 @@ class FunctionalLSTMModel(nx.Model):
             verbose=1, 
             save_best_only=True
             )
-        tensorboard_callback = TensorBoard(log_dir=self.logdir)
+        logdir = f'FLSTM_logs/scalars/{datetime.now().strftime("%Y%m%d-%H%M%S")}'
+        tensorboard_callback = TensorBoard(log_dir=logdir)
         self.callbacks = [
             early_stop, 
             model_checkpoint,
@@ -360,47 +375,70 @@ class FunctionalLSTMModel(nx.Model):
         dfit: nx.data.Data, 
         tournament: str, 
         eval_set: Tuple = None,
-        epochs: int = 50):
+        epochs: int = 50,
+        batch_size: int = 30) -> Any:
         """Trains Functional LSTM model using TimeSeriesGenerator"""
 
-        self.train_generator = TimeseriesGenerator(
+        train_generator = TimeseriesGenerator(
             data=dfit.x, 
             targets=dfit.y[tournament],
             length=self.time_steps, 
             sampling_rate=1,
-            batch_size=15)
+            batch_size=batch_size)
 
-        self.eval_generator = TimeseriesGenerator(
+        eval_generator = TimeseriesGenerator(
             data=eval_set[0], 
             targets=eval_set[1],
             length=self.time_steps, 
             sampling_rate=1,
-            batch_size=15)
-                    
+            batch_size=batch_size)
+
+        LOGGER.info('Training started...')           
         self.model.fit_generator(
-            self.train_generator,
-            steps_per_epoch=len(self.train_generator),
+            train_generator,
+            steps_per_epoch=len(train_generator),
             epochs=epochs,
             verbose=2,
-            validation_data=self.eval_generator,
+            validation_data=eval_generator,
             callbacks=self.callbacks
         )
 
-    def predict(self, dpre: nx.data.Data, tournament: str) -> pd.DataFrame:
-        """Alternative to fit_predict()"""
 
-        self.test_generator = TimeseriesGenerator(
-            data=dpre.x,
-            targets=dpre.y[tournament],
+    def predict(self, dpre: nx.data.Data, tournament: str) -> Any:
+        """
+        Alternative to fit_predict() 
+        dpre: must be data['tournament']
+        tournament: can be int or str.
+        """
+
+        prediction = nx.Prediction()
+        data_predict = dpre.y_to_nan()
+        test_generator = TimeseriesGenerator(
+            data=data_predict.x,
+            targets=data_predict.y[tournament],
             length=self.time_steps, 
             sampling_rate=1,
-            batch_size=1)
-
-        prediction = self.model.predict_generator(self.test_generator)
-
-        return pd.DataFrame(
-            data={"prediction": prediction}, index=dpre.ids
+            batch_size=1
             )
+
+        try:
+            LOGGER.info('Inference started...')
+            yhat = self.model.predict_generator(test_generator)
+            LOGGER.info('Inference complete...now preparing predictions for submission')
+        except Exception as e:
+            LOGGER.error(f'Failure to make predictions with {e}')
+            raise e 
+
+        try:
+            prediction = prediction.merge_arrays(
+                data_predict.ids, 
+                yhat, 
+                self.name, 
+                tournament)
+            return prediction
+        except Exception as e:
+            LOGGER.error(f'Failure to prepare predictions with {e}')
+            raise e
 
     def fit_predict(self, dfit, dpre, tournament):
 
@@ -425,9 +463,6 @@ class BidirectionalLSTMModel(nx.Model):
         self.time_steps = time_steps
         self.model = self._bidirectional_lstm_model()
         self.callbacks = None
-        self.train_generator = None 
-        self.eval_generator = None
-        self.logdir = f'BILSTM_logs/scalars/{datetime.now().strftime("%Y%m%d-%H%M%S")}'
 
     def _bidirectional_lstm_model(self):
         """Returns Bidirectional LSTM model"""
@@ -466,7 +501,8 @@ class BidirectionalLSTMModel(nx.Model):
             verbose=1, 
             save_best_only=True
             )
-        tensorboard_callback = TensorBoard(log_dir=self.logdir)
+        logdir = f'BILSTM_logs/scalars/{datetime.now().strftime("%Y%m%d-%H%M%S")}'
+        tensorboard_callback = TensorBoard(log_dir=logdir)
         self.callbacks = [
             early_stop, 
             model_checkpoint,
@@ -486,31 +522,69 @@ class BidirectionalLSTMModel(nx.Model):
         dfit: nx.data.Data, 
         tournament: str, 
         eval_set: Tuple = None,
-        epochs: int = 10):
+        epochs: int = 1,
+        batch_size: int = 30) -> Any:
         """Trains Bidirectional LSTM model using TimeSeriesGenerator"""
 
-        self.train_generator = TimeseriesGenerator(
+        train_generator = TimeseriesGenerator(
             data=dfit.x, 
             targets=dfit.y[tournament],
             length=self.time_steps, 
             sampling_rate=1,
-            batch_size=15)
+            batch_size=batch_size)
 
-        self.eval_generator = TimeseriesGenerator(
+        eval_generator = TimeseriesGenerator(
             data=eval_set[0], 
             targets=eval_set[1],
             length=self.time_steps, 
             sampling_rate=1,
-            batch_size=15)
-                    
+            batch_size=batch_size)
+        LOGGER.info('Training started...')           
         self.model.fit_generator(
-            self.train_generator,
-            steps_per_epoch=len(self.train_generator),
+            train_generator,
+            steps_per_epoch=len(train_generator),
             epochs=epochs,
             verbose=2,
-            validation_data=self.eval_generator,
+            validation_data=eval_generator,
             callbacks=self.callbacks
         )
+
+
+    def predict(self, dpre: nx.data.Data, tournament: str) -> Any:
+        """
+        Alternative to fit_predict() 
+        dpre: must be data['tournament']
+        tournament: can be int or str.
+        """
+
+        prediction = nx.Prediction()
+        data_predict = dpre.y_to_nan()
+        test_generator = TimeseriesGenerator(
+            data=data_predict.x,
+            targets=data_predict.y[tournament],
+            length=self.time_steps, 
+            sampling_rate=1,
+            batch_size=1
+            )
+
+        try:
+            LOGGER.info('Inference started...')
+            yhat = self.model.predict_generator(test_generator)
+            LOGGER.info('Inference complete...now preparing predictions for submission')
+        except Exception as e:
+            LOGGER.error(f'Failure to make predictions with {e}')
+            raise e 
+
+        try:
+            prediction = prediction.merge_arrays(
+                data_predict.ids, 
+                yhat, 
+                self.name, 
+                tournament)
+            return prediction
+        except Exception as e:
+            LOGGER.error(f'Failure to prepare predictions with {e}')
+            raise e
 
     def fit_predict(self, dfit, dpre, tournament):
 

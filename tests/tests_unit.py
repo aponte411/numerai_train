@@ -1,4 +1,4 @@
-import abc
+from abc import abstractmethod
 import numerox as nx
 import pandas as pd 
 import numpy as np
@@ -14,7 +14,8 @@ DUMMY_DF = pd.DataFrame({
 
 
 class Model:
-    @abc.abstractmethod
+
+    @abstractmethod
     def fit(self, X, y):
 
         features = X is not None
@@ -22,7 +23,7 @@ class Model:
 
         return features, targets 
 
-    @abc.abstractmethod
+    @abstractmethod
     def predict(self, X):
 
         features = X is not None
@@ -38,6 +39,7 @@ def test_model():
     
 class DummyModel(nx.Model):
     def __init__(self, verbose=False):
+        super(DummyModel).__init__()
         self.params = None
         self.verbose = verbose
         self.model = Model()
@@ -58,10 +60,7 @@ class DummyModel(nx.Model):
     @classmethod
     def load(cls, filename):
         return joblib.load(filename)
-    
 
-def test_dummy():
-    assert 1 == 1
 
 @pytest.fixture(params=[
     models.LSTMModel,
@@ -73,8 +72,18 @@ def test_dummy():
     DummyModel
 ])
 def model(request):
-    return request.param()
+    return request.param
+
+def test_model_subclass(model):
+    assert issubclass(model, nx.Model) == True
+
+def test_model_fit_method():
+    pass 
+
+def test_model_predict_method():
+    pass 
+
+def test_model_submission():
+    pass 
 
 
-def test_lstm_model(model):
-    assert type(model) == nx.Model

@@ -22,7 +22,11 @@ def prepare_tournament_data() -> Tuple:
     """Downloads latest the tournament data from numerox"""
 
     tournaments: List[str] = nx.tournament_names()
-    data: nx.data.Data = nx.download('numerai_dataset.zip')
+    try:
+        data: nx.data.Data = nx.download('numerai_dataset.zip')
+    except Exception as e:
+        print(f'Failure to download numerai data with {e}')
+        raise e 
     
     return tournaments, data
 
