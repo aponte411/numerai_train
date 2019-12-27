@@ -14,7 +14,6 @@ DUMMY_DF = pd.DataFrame({
 
 
 class Model:
-
     @abstractmethod
     def fit(self, X, y):
 

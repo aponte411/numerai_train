@@ -29,7 +29,8 @@ To train models run the following command. After training is complete the model 
 
 # Making predictions
 
-WIP
+To train and make predictions run the following command:
+`python predict --model <model-name>`
 
 
 # Running Tests
