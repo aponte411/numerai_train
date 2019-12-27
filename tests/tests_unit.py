@@ -65,6 +65,7 @@ class DummyModel(nx.Model):
 @pytest.fixture(params=[
     models.LSTMModel,
     models.XGBoostModel,
+    models.CatBoostRegressorModel,
     models.LinearModel,
     models.KerasModel,
     models.BidirectionalLSTMModel,

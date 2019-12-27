@@ -6,6 +6,7 @@ from typing import Any, Tuple, List
 from datetime import datetime
 from sklearn.linear_model import LinearRegression
 from xgboost import XGBRegressor
+from catboost import CatBoostRegressor
 from keras import layers, Sequential
 from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 from keras.preprocessing.sequence import TimeseriesGenerator
@@ -61,6 +62,34 @@ class XGBoostModel(nx.Model):
             eval_set=eval_set, 
             early_stopping_rounds=50
         )
+
+    def predict(self, dpre: nx.data.Data, tournament: str) -> Any:
+        """
+        Alternative to fit_predict() 
+        dpre: must be data['tournament']
+        tournament: can be int or str.
+        """
+
+        prediction = nx.Prediction()
+        data_predict = dpre.y_to_nan()
+        try:
+            LOGGER.info('Inference started...')
+            yhat = self.model.predict(data_predict.x)
+            LOGGER.info('Inference complete...now preparing predictions for submission')
+        except Exception as e:
+            LOGGER.error(f'Failure to make predictions with {e}')
+            raise e 
+
+        try:
+            prediction = prediction.merge_arrays(
+                data_predict.ids, 
+                yhat, 
+                self.name, 
+                tournament)
+            return prediction
+        except Exception as e:
+            LOGGER.error(f'Failure to prepare predictions with {e}')
+            raise e
 
     def fit_predict(self, dfit, dpre, tournament):
         # fit is done separately in `.fit()`
@@ -425,20 +454,21 @@ class FunctionalLSTMModel(nx.Model):
             LOGGER.info('Inference started...')
             yhat = self.model.predict_generator(test_generator)
             LOGGER.info('Inference complete...now preparing predictions for submission')
+            return yhat
         except Exception as e:
             LOGGER.error(f'Failure to make predictions with {e}')
             raise e 
 
-        try:
-            prediction = prediction.merge_arrays(
-                data_predict.ids, 
-                yhat, 
-                self.name, 
-                tournament)
-            return prediction
-        except Exception as e:
-            LOGGER.error(f'Failure to prepare predictions with {e}')
-            raise e
+        # try:
+        #     prediction = prediction.merge_arrays(
+        #         data_predict.ids, 
+        #         yhat, 
+        #         self.name, 
+        #         tournament)
+        #     return prediction
+        # except Exception as e:
+        #     LOGGER.error(f'Failure to prepare predictions with {e}')
+        #     raise e
 
     def fit_predict(self, dfit, dpre, tournament):
 
@@ -589,6 +619,73 @@ class BidirectionalLSTMModel(nx.Model):
     def fit_predict(self, dfit, dpre, tournament):
 
         # fit is done separately in `.fit()`
+        yhat = self.model.predict(dpre.x)
+
+        return dpre.ids, yhat
+
+    def save(self, filename):
+        joblib.dump(self, filename)
+
+    @classmethod
+    def load(cls, filename):
+        return joblib.load(filename)
+
+
+class CatBoostRegressorModel(nx.Model):
+    """CatBoostRegressor Model"""
+
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+        self.params = None
+        self.model = CatBoostRegressor(
+            loss_function='RMSE', 
+            depth=7, 
+            learning_rate=0.43217778, 
+            iterations=1003,
+            random_seed=511,
+            od_type='Iter',
+            od_wait=20
+            )
+
+    def fit(self, dfit: nx.data.Data, tournament: str, eval_set=None):
+        self.model.fit(
+            X=dfit.x, 
+            y=dfit.y[tournament],
+            eval_set=eval_set, 
+            early_stopping_rounds=50
+        )
+
+    def predict(self, dpre: nx.data.Data, tournament: str) -> Any:
+        """
+        Alternative to fit_predict() 
+        dpre: must be data['tournament']
+        tournament: can be int or str.
+        """
+
+        prediction = nx.Prediction()
+        data_predict = dpre.y_to_nan()
+        try:
+            LOGGER.info('Inference started...')
+            yhat = self.model.predict(data_predict.x)
+            LOGGER.info('Inference complete...now preparing predictions for submission')
+        except Exception as e:
+            LOGGER.error(f'Failure to make predictions with {e}')
+            raise e 
+
+        try:
+            prediction = prediction.merge_arrays(
+                data_predict.ids, 
+                yhat, 
+                self.name, 
+                tournament)
+            return prediction
+        except Exception as e:
+            LOGGER.error(f'Failure to prepare predictions with {e}')
+            raise e
+
+    def fit_predict(self, dfit, dpre, tournament):
+        # fit is done separately in `.fit()`
+
         yhat = self.model.predict(dpre.x)
 
         return dpre.ids, yhat

@@ -1,6 +1,8 @@
 numerox>=4
 numerapi
+scikit-learn
 xgboost
+catboost
 keras
 tensorflow
 pytest
