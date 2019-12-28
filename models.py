@@ -7,6 +7,7 @@ from datetime import datetime
 from sklearn.linear_model import LinearRegression
 from xgboost import XGBRegressor
 from catboost import CatBoostRegressor
+from lightgbm import LGBMRegressor
 from keras import layers, Sequential
 from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 from keras.preprocessing.sequence import TimeseriesGenerator
@@ -619,6 +620,70 @@ class BidirectionalLSTMModel(nx.Model):
     def fit_predict(self, dfit, dpre, tournament):
 
         # fit is done separately in `.fit()`
+        yhat = self.model.predict(dpre.x)
+
+        return dpre.ids, yhat
+
+    def save(self, filename):
+        joblib.dump(self, filename)
+
+    @classmethod
+    def load(cls, filename):
+        return joblib.load(filename)
+
+
+class LightGBMRegressorModel(nx.Model):
+    """LGBMRegressor Model"""
+
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+        self.params = None
+        self.model = LGBMRegressor(
+            n_estimators=2037,
+            silent=False,
+            random_state=511,
+            early_stopping_rounds=50
+        )
+
+    def fit(self, dfit: nx.data.Data, tournament: str, eval_set=None):
+        self.model.fit(
+            X=dfit.x, 
+            y=dfit.y[tournament],
+            eval_set=eval_set, 
+            early_stopping_rounds=50
+        )
+
+    def predict(self, dpre: nx.data.Data, tournament: str) -> Any:
+        """
+        Alternative to fit_predict() 
+        dpre: must be data['tournament']
+        tournament: can be int or str.
+        """
+
+        prediction = nx.Prediction()
+        data_predict = dpre.y_to_nan()
+        try:
+            LOGGER.info('Inference started...')
+            yhat = self.model.predict(data_predict.x)
+            LOGGER.info('Inference complete...now preparing predictions for submission')
+        except Exception as e:
+            LOGGER.error(f'Failure to make predictions with {e}')
+            raise e 
+
+        try:
+            prediction = prediction.merge_arrays(
+                data_predict.ids, 
+                yhat, 
+                self.name, 
+                tournament)
+            return prediction
+        except Exception as e:
+            LOGGER.error(f'Failure to prepare predictions with {e}')
+            raise e
+
+    def fit_predict(self, dfit, dpre, tournament):
+        # fit is done separately in `.fit()`
+
         yhat = self.model.predict(dpre.x)
 
         return dpre.ids, yhat

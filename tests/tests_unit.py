@@ -65,6 +65,7 @@ class DummyModel(nx.Model):
     models.LSTMModel,
     models.XGBoostModel,
     models.CatBoostRegressorModel,
+    models.LightGBMRegressorModel,
     models.LinearModel,
     models.KerasModel,
     models.BidirectionalLSTMModel,

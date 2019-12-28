@@ -2,7 +2,7 @@ import numerox as nx
 import numerapi
 import os
 import models
-from typing import Any, Tuple
+from typing import Any, Tuple, List
 import click
 from utils import get_logger, prepare_tournament_data
 
@@ -187,6 +187,66 @@ def train_and_save_catboost_model(tournament: str, data: nx.data.Data) -> nx.Mod
         
     return model
 
+
+def train_and_save_lightgbm_model(tournament: str, data: nx.data.Data) -> nx.Model:
+    """Train and persist model weights"""
+
+    saved_model_name = f'lightgbm_prediction_model_{tournament}'
+    if os.path.exists(saved_model_name):
+        LOGGER.info(f"using saved model for {tournament}")
+        model = models.LightGBMRegressorModel().load(saved_model_name)
+    else:
+        LOGGER.info(f"Saved model not found for {tournament}")
+        model = models.LightGBMRegressorModel()
+        LOGGER.info(f"Training LightGBMRegressor model for {tournament}")
+        eval_set = (
+            data['validation'].x, data['validation'].y[tournament]
+        )
+        model.fit(
+            dfit=data['train'], 
+            tournament=tournament,
+            eval_set=eval_set
+        )
+        LOGGER.info(f"Saving model for {tournament}")
+        model.save(f'lightgbm_prediction_model_{tournament}')
+        
+    return model
+
+
+def train_ensemble_model(tournament: str, data: nx.data.Data) -> List[nx.Model]:
+    """Train and persist model weights"""
+
+    lgbm_saved = f'lightgbm_prediction_model_{tournament}'
+    xgb_saved = f'xgboost_prediction_model_{tournament}'
+    cat_saved = f'catboost_prediction_model_{tournament}'
+    lstm_saved = f'lstm_prediction_model_{tournament}'
+    if os.path.exists(lgbm_saved) & \
+        os.path.exists(xgb_saved) & \
+            os.path.exists(cat_saved) & \
+                os.path.exists(lstm_saved):
+        LOGGER.info(f"Using saved models for {tournament}")
+        lgbm = models.LightGBMRegressorModel().load(lgbm_saved)
+        xgb = models.XGBoostModel().load(lgbm_saved)
+        cat = models.CatBoostRegressorModel().load(lgbm_saved)
+        lstm = models.LSTMModel().load(lgbm_saved)
+    # else:
+    #     LOGGER.info(f"Saved model not found for {tournament}")
+    #     model = models.LightGBMRegressorModel()
+    #     LOGGER.info(f"Training LightGBMRegressor model for {tournament}")
+    #     eval_set = (
+    #         data['validation'].x, data['validation'].y[tournament]
+    #     )
+    #     model.fit(
+    #         dfit=data['train'], 
+    #         tournament=tournament,
+    #         eval_set=eval_set
+    #     )
+    #     LOGGER.info(f"Saving model for {tournament}")
+    #     model.save(f'lightgbm_prediction_model_{tournament}')
+        
+    return [lgbm, xgb, cat, lstm]
+
+
 @click.command()
 @click.option('-m', '--model', type=str, default='xgboost')
 def main(model: str) -> Any:
@@ -194,6 +254,10 @@ def main(model: str) -> Any:
 
     if model.lower() == 'xgboost':
         model = train_and_save_xgboost_model()
+    if model.lower() == 'catboost':
+        model = train_and_save_catboost_model()
+    if model.lower() == 'lightgbm':
+        model = train_and_save_lightgbm_model()
     if model.lower() == 'keras':
         train_keras_model()
     if model.lower() == 'lstm':

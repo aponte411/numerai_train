@@ -3,6 +3,7 @@ numerapi
 scikit-learn
 xgboost
 catboost
+lightgbm
 keras
 tensorflow
 pytest
