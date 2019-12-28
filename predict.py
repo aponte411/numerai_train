@@ -70,6 +70,16 @@ def train_and_predict_xgboost_model() -> Any:
             data=data,
             tournament=tournament_name
             )
+        LOGGER.info(
+            predictions.summaries(
+            data['validation'], 
+            tournament=tournament_name)
+        )
+        LOGGER.info(
+            predictions[:, tournament_name].metric_per_era(
+                data=data['validation'], 
+                tournament=tournament_name)
+            )
 
     return predictions
 
@@ -90,8 +100,19 @@ def train_and_predict_functional_lstm_model() -> Any:
             data=data,
             tournament=tournament_name
             )
+        LOGGER.info(
+            predictions.summaries(
+            data['validation'], 
+            tournament=tournament_name)
+        )
+        LOGGER.info(
+            predictions[:, tournament_name].metric_per_era(
+                data=data['validation'], 
+                tournament=tournament_name)
+            )
 
     return predictions
+
 
 def train_and_predict_catboost_model() -> Any:
     """Trains Catboost model and save weights"""
@@ -109,7 +130,43 @@ def train_and_predict_catboost_model() -> Any:
             data=data,
             tournament=tournament_name
             )
+        LOGGER.info(
+            predictions.summaries(
+            data['validation'], 
+            tournament=tournament_name)
+        )
+        LOGGER.info(
+            predictions[:, tournament_name].metric_per_era(
+                data=data['validation'], 
+                tournament=tournament_name)
+            )
+    
+    return predictions
 
+# WIP
+def train_and_predict_ensemble():
+
+    tournaments, data = prepare_tournament_data()
+    LOGGER.info(f'Training and making predictions for {tournaments}')
+    for tournament_name in tournaments:
+        model: nx.Model = train.train_and_save_functional_ensemble_model(
+            tournament=tournament_name, 
+            data=data
+            )
+        predictions: nx.Prediction = make_predictions_and_prepare_submission(
+            model=model,
+            model_name='ensemble',
+            data=data,
+            tournament=tournament_name
+            )
+        LOGGER.info(
+            predictions[:, tournament_name].metric_per_era(
+                data=data['validation'], 
+                tournament=tournament_name)
+            )
+        # LOGGER.info(
+        #     predictions[:, tournament_name].dominance(data['validation'])
+        # )
     return predictions
 
 
