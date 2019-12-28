@@ -37,3 +37,6 @@ To train and make predictions run the following command:
 
 With `numerai_train` as your working directory, run the following from the command line:
 - `python -m pytest tests\tests_unit.py -v`
+
+# Training models using AWS ECS
+WIP

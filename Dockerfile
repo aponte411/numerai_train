@@ -11,4 +11,4 @@ ENV NUMERAI_PUBLIC_ID=$NUMERAI_PUBLIC_ID
 ARG NUMERAI_SECRET_KEY
 ENV NUMERAI_SECRET_KEY=$NUMERAI_SECRET_KEY
 
-CMD [ "python", "./train.py"]
+CMD [ "python", "./train.py", "--model lstm"]
