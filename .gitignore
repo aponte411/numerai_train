@@ -15,10 +15,13 @@ __pycache__/utils.cpython-37.pyc
 __pycache__
 .pytest_cache
 
+.coverage
+
 xgboost_prediction_model_kazutsugi
 catboost_prediction_model_kazutsugi
 lightgbm_prediction_model_kazutsugi
 lstm_prediction_model_kazutsugi
+bidirectional_lstm_prediction_model_kazutsugi
 functional_lstm_prediction_model_kazutsugi
 keras_lstm_model_trained_kazutsugi
 keras_bidirectional_lstm_model_trained_kazutsugi

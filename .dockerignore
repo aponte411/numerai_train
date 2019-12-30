@@ -6,3 +6,5 @@ numerai_dataset.zip
 __pycache__
 .pytest_cache
 catboost_info
+.coverage
+.vscode

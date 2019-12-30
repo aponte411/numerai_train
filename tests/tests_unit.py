@@ -8,8 +8,9 @@ import models
 
 
 DUMMY_DF = pd.DataFrame({
-    "x": np.random.random(5),
-    "y": np.random.random(5)
+    "x": np.random.random(1000),
+    "x_test": np.random.random(1000),
+    "y": np.random.random(1000)
 })
 
 
@@ -67,21 +68,33 @@ class DummyModel(nx.Model):
     models.CatBoostRegressorModel,
     models.LightGBMRegressorModel,
     models.LinearModel,
-    models.KerasModel,
     models.BidirectionalLSTMModel,
     models.FunctionalLSTMModel,
     DummyModel
 ])
 def model(request):
+    """
+    Model fixture to test multiple models
+    in sequence. 
+
+    Pass into test functions.
+    """
+
     return request.param
 
 def test_model_subclass(model):
     assert issubclass(model, nx.Model) == True
 
-def test_model_fit_method():
+def test_model_name(model):
+    assert model().name is not None
+
+def test_model_fit_method(model):
+    # model().fit(DUMMY_DF.x, DUMMY_DF.y)
     pass 
 
 def test_model_predict_method():
+    # DUMMY_DF['y_hat'] = model().predict(DUMMY.x_test)
+    # assert DUMMY_DF['yhat'] is not None
     pass 
 
 def test_model_submission():

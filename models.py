@@ -9,10 +9,12 @@ from xgboost import XGBRegressor
 from catboost import CatBoostRegressor
 from lightgbm import LGBMRegressor
 from keras import layers, Sequential
+from keras import metrics
 from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 from keras.preprocessing.sequence import TimeseriesGenerator
 from keras_functional_lstm import LstmModel
 from utils import get_logger
+from metrics import correlation_coefficient_loss, get_spearman_rankcor
 
 LOGGER = get_logger(__name__)
 
@@ -20,9 +22,8 @@ LOGGER = get_logger(__name__)
 class LinearModel(nx.Model):
     """Linear Regression"""
 
-    def __init__(self, verbose=False):
+    def __init__(self):
         self.params = None
-        self.verbose = verbose
         self.model = LinearRegression()
 
     def fit(self, dfit, tournament):
@@ -46,15 +47,23 @@ class LinearModel(nx.Model):
 class XGBoostModel(nx.Model):
     """XGBoost Regressor"""
 
-    def __init__(self, verbose=False):
-        self.verbose = verbose
+    def __init__(
+        self, 
+        max_depth: int = 7, 
+        learning_rate: float = 0.001777765,
+        l2: float = 0.1111119, 
+        n_estimators: int = 2019, 
+        colsample_bytree: float = 0.019087):
         self.params = None
-        self.model = XGBRegressor(max_depth=7,
-                                  learning_rate=0.019182738141,
-                                  n_estimators=1982,
-                                  n_jobs=-1,
-                                  colsample_bytree=0.106543,
-                                  verbosity=3)
+        self.model = XGBRegressor(
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            reg_lambda=l2,
+            n_estimators=n_estimators,
+            n_jobs=-1,
+            colsample_bytree=colsample_bytree,
+            verbosity=3
+            )
 
     def fit(self, dfit: nx.data.Data, tournament: str, eval_set=None):
         self.model.fit(
@@ -93,90 +102,6 @@ class XGBoostModel(nx.Model):
             raise e
 
     def fit_predict(self, dfit, dpre, tournament):
-        # fit is done separately in `.fit()`
-
-        yhat = self.model.predict(dpre.x)
-
-        return dpre.ids, yhat
-
-    def save(self, filename):
-        joblib.dump(self, filename)
-
-    @classmethod
-    def load(cls, filename):
-        return joblib.load(filename)
-
-
-class KerasModel(nx.Model):
-    """Keras Regressor"""
-        
-    def __init__(self, verbose=False):
-        self.verbose = verbose
-        self.params = None
-        self.model = self._keras_model()
-        self.callbacks = None
-
-    def _keras_model(self):
-        """Returns Keras Sequential model"""
-
-        model = Sequential()
-        model.add(layers.Dense(
-            units=225, 
-            kernel_initializer='glorot_normal', 
-            activation='relu', 
-            input_dim=310
-            ))
-        model.add(layers.Dense(
-            units=200, 
-            kernel_initializer='glorot_normal', 
-            activation='relu'
-            ))
-        model.add(layers.Dense(
-            units=150, 
-            kernel_initializer='glorot_normal', 
-            activation='relu'
-            ))
-        model.add(layers.Dense(
-            units=50, 
-            kernel_initializer='glorot_normal',
-            activation='relu'
-            ))
-        model.add(layers.Dense(units=1))
-        
-        early_stop = EarlyStopping(monitor='val_loss', verbose=1)
-        model_checkpoint = ModelCheckpoint(
-            'best_keras_model.h5', 
-            monitor='val_loss', 
-            verbose=1, 
-            save_best_only=True
-            )
-        self.callbacks = [early_stop, model_checkpoint]
-
-        model.compile(
-            loss='mean_squared_error',
-            optimizer='adam',
-            metrics=['accuracy']
-            )
-        
-        return model 
-
-    def fit(
-        self, 
-        dfit: nx.data.Data, 
-        tournament: str, 
-        eval_set: Tuple = None) -> Any:
-        self.model.fit(
-            dfit.x, 
-            dfit.y[tournament],
-            epochs=100, 
-            batch_size=120,
-            verbose=2,
-            validation_data=eval_set,
-            callbacks=self.callbacks
-        )
-
-    def fit_predict(self, dfit, dpre, tournament):
-
         # fit is done separately in `.fit()`
 
         yhat = self.model.predict(dpre.x)
@@ -239,7 +164,7 @@ class LSTMModel(nx.Model):
         
         early_stop = EarlyStopping(monitor='val_loss', verbose=1)
         model_checkpoint = ModelCheckpoint(
-            'best_lstm_model.h5', 
+            'best_lstm_model.h5',
             monitor='val_loss', 
             verbose=1, 
             save_best_only=True
@@ -255,7 +180,11 @@ class LSTMModel(nx.Model):
         model.compile(
             loss='mean_squared_error',
             optimizer='adam',
-            metrics=['accuracy']
+            metrics=[
+                metrics.mae,
+                correlation_coefficient_loss,
+                get_spearman_rankcor
+                ]
             )
         
         return model 
@@ -273,7 +202,7 @@ class LSTMModel(nx.Model):
         dfit: nx.data.Data, 
         tournament: str, 
         eval_set: Tuple = None,
-        epochs: int = 50,
+        epochs: int = 1,
         batch_size: int = 30) -> Any:
         """Trains LSTM model using TimeSeriesGenerator"""
 
@@ -289,7 +218,8 @@ class LSTMModel(nx.Model):
             targets=eval_set[1],
             length=self.time_steps, 
             sampling_rate=1,
-            batch_size=batch_size)
+            batch_size=batch_size
+            )
 
         LOGGER.info('Training started...')           
         self.model.fit_generator(
@@ -299,7 +229,7 @@ class LSTMModel(nx.Model):
             verbose=2,
             validation_data=eval_generator,
             callbacks=self.callbacks
-        )
+            )
 
     def predict(self, dpre: nx.data.Data, tournament: str) -> Any:
         """
@@ -317,26 +247,24 @@ class LSTMModel(nx.Model):
             sampling_rate=1,
             batch_size=1
             )
-
         try:
             LOGGER.info('Inference started...')
             yhat = self.model.predict_generator(test_generator)
             LOGGER.info('Inference complete...now preparing predictions for submission')
-            return yhat
         except Exception as e:
             LOGGER.error(f'Failure to make predictions with {e}')
             raise e 
-
-        # try:
-        #     prediction = prediction.merge_arrays(
-        #         data_predict.ids, 
-        #         yhat, 
-        #         self.name, 
-        #         tournament)
-        #     return prediction
-        # except Exception as e:
-        #     LOGGER.error(f'Failure to prepare predictions with {e}')
-        #     raise e
+        # still needs to be fixed due to index error
+        try:
+            prediction = prediction.merge_arrays(
+                data_predict.ids, 
+                yhat, 
+                self.name, 
+                tournament)
+            return prediction
+        except Exception as e:
+            LOGGER.error(f'Failure to prepare predictions with {e}')
+            raise e
 
     def fit_predict(
         self, 
@@ -405,7 +333,7 @@ class FunctionalLSTMModel(nx.Model):
         dfit: nx.data.Data, 
         tournament: str, 
         eval_set: Tuple = None,
-        epochs: int = 50,
+        epochs: int = 1,
         batch_size: int = 30) -> Any:
         """Trains Functional LSTM model using TimeSeriesGenerator"""
 
@@ -450,26 +378,24 @@ class FunctionalLSTMModel(nx.Model):
             sampling_rate=1,
             batch_size=1
             )
-
         try:
             LOGGER.info('Inference started...')
             yhat = self.model.predict_generator(test_generator)
             LOGGER.info('Inference complete...now preparing predictions for submission')
-            return yhat
         except Exception as e:
             LOGGER.error(f'Failure to make predictions with {e}')
             raise e 
 
-        # try:
-        #     prediction = prediction.merge_arrays(
-        #         data_predict.ids, 
-        #         yhat, 
-        #         self.name, 
-        #         tournament)
-        #     return prediction
-        # except Exception as e:
-        #     LOGGER.error(f'Failure to prepare predictions with {e}')
-        #     raise e
+        try:
+            prediction = prediction.merge_arrays(
+                data_predict.ids, 
+                yhat, 
+                self.name, 
+                tournament)
+            return prediction
+        except Exception as e:
+            LOGGER.error(f'Failure to prepare predictions with {e}')
+            raise e
 
     def fit_predict(self, dfit, dpre, tournament):
 
@@ -491,28 +417,28 @@ class BidirectionalLSTMModel(nx.Model):
         
     def __init__(self, time_steps: int = 1):
         self.params = None
-        self.time_steps = time_steps
-        self.model = self._bidirectional_lstm_model()
-        self.callbacks = None
+        self.time_steps: int = time_steps
+        self.model: Sequential = self._bidirectional_lstm_model()
+        self.callbacks: List = None
 
     def _bidirectional_lstm_model(self):
         """Returns Bidirectional LSTM model"""
 
         model = Sequential()
         model.add(layers.Bidirectional(layers.LSTM(
-            units=225, 
+            units=200, 
             activation='relu', 
             input_shape=(self.time_steps, 310),
-            return_sequences=True
+            return_sequences=False # change back to True when adding another LSTM layer
             )))
-        model.add(layers.Bidirectional(layers.LSTM(
-            units=200, 
-            kernel_initializer='glorot_normal', 
-            activation='relu', 
-            return_sequences=False
-            )))
+        # model.add(layers.Bidirectional(layers.LSTM(
+        #     units=200, 
+        #     kernel_initializer='glorot_normal', 
+        #     activation='relu', 
+        #     return_sequences=False
+        #     )))
         model.add(layers.Dense(
-            units=150, 
+            units=100, 
             kernel_initializer='glorot_normal', 
             activation='relu'
             ))
@@ -569,7 +495,9 @@ class BidirectionalLSTMModel(nx.Model):
             targets=eval_set[1],
             length=self.time_steps, 
             sampling_rate=1,
-            batch_size=batch_size)
+            batch_size=batch_size
+            )
+
         LOGGER.info('Training started...')           
         self.model.fit_generator(
             train_generator,
@@ -578,12 +506,11 @@ class BidirectionalLSTMModel(nx.Model):
             verbose=2,
             validation_data=eval_generator,
             callbacks=self.callbacks
-        )
-
+            )
 
     def predict(self, dpre: nx.data.Data, tournament: str) -> Any:
         """
-        Alternative to fit_predict() 
+        Alternative to .fit_predict() 
         dpre: must be data['tournament']
         tournament: can be int or str.
         """
@@ -597,7 +524,6 @@ class BidirectionalLSTMModel(nx.Model):
             sampling_rate=1,
             batch_size=1
             )
-
         try:
             LOGGER.info('Inference started...')
             yhat = self.model.predict_generator(test_generator)
@@ -635,14 +561,19 @@ class BidirectionalLSTMModel(nx.Model):
 class LightGBMRegressorModel(nx.Model):
     """LGBMRegressor Model"""
 
-    def __init__(self, verbose=False):
-        self.verbose = verbose
+    def __init__(
+        self,
+        n_estimators: int = 2019,
+        learning_rate: float = 0.00111325,
+        reg_lambda: float = 0.111561):
         self.params = None
         self.model = LGBMRegressor(
-            n_estimators=2037,
+            n_estimators=n_estimators,
+            learning_rate=learning_rate,
+            reg_lambda=reg_lambda,
             silent=False,
             random_state=511,
-            early_stopping_rounds=50
+            early_stopping_rounds=25
         )
 
     def fit(self, dfit: nx.data.Data, tournament: str, eval_set=None):
@@ -699,14 +630,19 @@ class LightGBMRegressorModel(nx.Model):
 class CatBoostRegressorModel(nx.Model):
     """CatBoostRegressor Model"""
 
-    def __init__(self, verbose=False):
-        self.verbose = verbose
+    def __init__(
+        self,
+        depth: int = 8, 
+        learning_rate: float = 0.01234,
+        l2: float = 0.01,
+        iterations: int = 2019):
         self.params = None
         self.model = CatBoostRegressor(
             loss_function='RMSE', 
-            depth=7, 
-            learning_rate=0.43217778, 
-            iterations=1003,
+            depth=depth,
+            learning_rate=learning_rate,
+            l2_leaf_reg=l2,
+            iterations=iterations,
             random_seed=511,
             od_type='Iter',
             od_wait=20
@@ -716,8 +652,7 @@ class CatBoostRegressorModel(nx.Model):
         self.model.fit(
             X=dfit.x, 
             y=dfit.y[tournament],
-            eval_set=eval_set, 
-            early_stopping_rounds=50
+            eval_set=eval_set
         )
 
     def predict(self, dpre: nx.data.Data, tournament: str) -> Any:

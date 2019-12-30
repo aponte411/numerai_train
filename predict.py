@@ -16,7 +16,8 @@ def make_predictions_and_prepare_submission(
     model: nx.Model,
     model_name: str, 
     data: nx.data.Data, 
-    tournament: str) -> nx.Prediction:
+    tournament: str,
+    submit: bool = False) -> nx.Prediction:
     """
     Make predictions using the .predict() method
     and save to CSV undet tmp folder.
@@ -31,6 +32,17 @@ def make_predictions_and_prepare_submission(
     except Exception as e:
         LOGGER.error(f'Failed to save predictions with {e}')
         raise e
+
+    if submit:
+        submission_id = nx.upload(
+            filename=prediction_filename,
+            tournament=tournament,
+            public_id=os.eviron.get('PUBLIC_ID'),
+            secret_key=os.environ.get('SECRET_KEY'),
+            block=False,
+            n_tries=3
+            )
+        LOGGER.info(f'Predictions submitted. Submission id: {submission_id}')
 
     return prediction
 
@@ -55,7 +67,7 @@ def train_and_predict_lstm_model() -> Any:
     return predictions
 
 
-def train_and_predict_xgboost_model() -> Any:
+def train_and_predict_xgboost_model(submit_to_numerai) -> Any:
     """Trains XGBoost model and save weights"""
 
     tournaments, data = prepare_tournament_data()
@@ -63,13 +75,16 @@ def train_and_predict_xgboost_model() -> Any:
     for tournament_name in tournaments:
         model: nx.Model = train.train_and_save_xgboost_model(
             tournament=tournament_name, 
-            data=data
+            data=data,
+            load_model=False,
+            save_model=True
             )
         predictions: nx.Prediction = make_predictions_and_prepare_submission(
             model=model,
             model_name='xgboost',
             data=data,
-            tournament=tournament_name
+            tournament=tournament_name,
+            submit=submit_to_numerai
             )
         LOGGER.info(
             predictions.summaries(
@@ -115,7 +130,7 @@ def train_and_predict_functional_lstm_model() -> Any:
     return predictions
 
 
-def train_and_predict_catboost_model() -> Any:
+def train_and_predict_catboost_model(submit_to_numerai: bool) -> Any:
     """Trains CatBoost model and saves weights"""
 
     tournaments, data = prepare_tournament_data()
@@ -123,13 +138,16 @@ def train_and_predict_catboost_model() -> Any:
     for tournament_name in tournaments:
         model: nx.Model = train.train_and_save_catboost_model(
             tournament=tournament_name, 
-            data=data
+            data=data,
+            load_model=False,
+            save_model=True,
             )
         predictions: nx.Prediction = make_predictions_and_prepare_submission(
             model=model,
             model_name='catboost',
             data=data,
-            tournament=tournament_name
+            tournament=tournament_name,
+            submit=submit_to_numerai
             )
         LOGGER.info(
             predictions.summaries(
@@ -145,7 +163,7 @@ def train_and_predict_catboost_model() -> Any:
     return predictions
 
 
-def train_and_predict_lightgbm_model() -> Any:
+def train_and_predict_lightgbm_model(submit_to_numerai: bool) -> Any:
     """Trains LightGBM model and saves weights"""
 
     tournaments, data = prepare_tournament_data()
@@ -153,13 +171,16 @@ def train_and_predict_lightgbm_model() -> Any:
     for tournament_name in tournaments:
         model: nx.Model = train.train_and_save_lightgbm_model(
             tournament=tournament_name, 
-            data=data
+            data=data,
+            load_model=False,
+            save_model=True
             )
         predictions: nx.Prediction = make_predictions_and_prepare_submission(
             model=model,
             model_name='lightgbm',
             data=data,
-            tournament=tournament_name
+            tournament=tournament_name,
+            submit=submit_to_numerai
             )
         LOGGER.info(
             predictions.summaries(
@@ -173,6 +194,7 @@ def train_and_predict_lightgbm_model() -> Any:
             )
     
     return predictions
+
 
 # WIP
 def train_and_predict_ensemble():
@@ -209,30 +231,27 @@ def train_and_predict_ensemble():
                 data=data['validation'], 
                 tournament=tournament_name)
             )
-        # LOGGER.info(
-        #     final_prediction[:, tournament_name].dominance(data['validation'])
-        # )
+
     return predictions
 
 
 @click.command()
 @click.option('-m', '--model', type=str, default='xgboost')
-def main(model: str) -> Any:
+@click.option('-s', '--submit', type=bool, default=False)
+def main(model: str, submit) -> Any:
 
     if model == 'lstm':
         return train_and_predict_lstm_model()
     if model == 'xgboost':
-        return train_and_predict_xgboost_model()
+        return train_and_predict_xgboost_model(submit)
     if model == 'catboost':
-        return train_and_predict_catboost_model()
+        return train_and_predict_catboost_model(submit)
     if model == 'lightgbm':
-        return train_and_predict_lightgbm_model()
+        return train_and_predict_lightgbm_model(submit)
     if model == 'flstm':
         return train_and_predict_functional_lstm_model()
     if model == 'ensemble':
         return train_and_predict_ensemble()
-    else:
-        LOGGER.info('None of the models were chosen..')
 
 
 if __name__ == "__main__":
