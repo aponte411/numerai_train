@@ -50,6 +50,7 @@ def correlations(y_true, y_pred) -> float:
         pct=True,
         method='first'
         )
+        
     return np.corrcoef(y_true, ranked_pred.values)[0, 1]
 
 
