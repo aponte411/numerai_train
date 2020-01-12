@@ -6,6 +6,7 @@ from typing import Any, Tuple, List
 from datetime import datetime
 from sklearn.linear_model import LinearRegression
 from xgboost import XGBRegressor
+import xgboost as xgb
 from catboost import CatBoostRegressor
 from lightgbm import LGBMRegressor
 from keras import layers, Sequential
@@ -14,7 +15,7 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 from keras.preprocessing.sequence import TimeseriesGenerator
 from keras_functional_lstm import LstmModel
 from utils import get_logger
-from metrics import correlation_coefficient_loss, get_spearman_rankcor
+from metrics import correlation_coefficient_loss, get_spearman_rankcor, correlations
 
 LOGGER = get_logger(__name__)
 
@@ -65,11 +66,20 @@ class XGBoostModel(nx.Model):
             verbosity=3
             )
 
-    def fit(self, dfit: nx.data.Data, tournament: str, eval_set=None):
+    def fit(
+        self, 
+        dfit: nx.data.Data, 
+        tournament: str, 
+        eval_set=None,
+        eval_metric=None) -> Any:
+        # might be necessary for custom eval_metric function (callable object)
+        # xgbtrain = xgb.DMatrix(dfit.x, label=dfit.y[tournament])
+
         self.model.fit(
             X=dfit.x, 
             y=dfit.y[tournament],
-            eval_set=eval_set, 
+            eval_set=eval_set,
+            eval_metric=eval_metric,
             early_stopping_rounds=50
         )
 
@@ -118,7 +128,7 @@ class XGBoostModel(nx.Model):
 
 class LSTMModel(nx.Model):
     """
-    Stacked LSTM network buil with
+    Stacked LSTM network built with
     Keras Sequential class. The LSTMModel
     object inherits functionality from the
     nx.Model class.
@@ -576,7 +586,12 @@ class LightGBMRegressorModel(nx.Model):
             early_stopping_rounds=25
         )
 
-    def fit(self, dfit: nx.data.Data, tournament: str, eval_set=None):
+    def fit(
+        self, 
+        dfit: nx.data.Data, 
+        tournament: str, 
+        eval_set=None,
+        eval_metric=None):
         self.model.fit(
             X=dfit.x, 
             y=dfit.y[tournament],

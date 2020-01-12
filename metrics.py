@@ -3,6 +3,7 @@ import pandas as pd
 import keras.backend as K
 import tensorflow as tf 
 from scipy.stats import spearmanr
+from typing import Tuple
 
 
 def get_spearman_rankcor(y_true, y_pred):
@@ -43,15 +44,17 @@ def correlation_coefficient_loss(
     return 1 - K.square(r)
 
 
-def correlations(y_true, y_pred) -> float:
-    """Spearman correlation"""
+def correlations(y_true, dtrain) -> float:
+    """Spearman correlation for XGBoost"""
 
-    ranked_pred = pd.Series(y_pred).rank(
+    y = dtrain.get_label()
+
+    ranked_prediction = pd.Series(y).rank(
         pct=True,
         method='first'
         )
-        
-    return np.corrcoef(y_true, ranked_pred.values)[0, 1]
+
+    return "Spearman Correlation", np.corrcoef(y_true, ranked_prediction.values)[0, 1]
 
 
 def payout(y_true, y_pred) -> float:

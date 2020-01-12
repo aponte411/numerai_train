@@ -2,9 +2,15 @@ import numerox as nx
 import numerapi
 import os
 import models
-from typing import Any, Tuple, List
+from typing import Any, Tuple, List, Dict
 import click
 from utils import get_logger, prepare_tournament_data
+from metrics import correlations
+
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.pipeline import Pipeline, make_pipeline, FeatureUnion, make_union
+from sklearn.feature_selection import SelectFromModel
 
 LOGGER = get_logger(__name__)
 
@@ -33,37 +39,12 @@ def train_linear_model() -> Any:
         model.save(f'model_trained_{tournament_name}')
 
 
-def train_keras_model() -> Any:
-    """Train model and save weights"""
-
-    tournaments, data = prepare_tournament_data()
-    LOGGER.info(tournaments)
-
-    for tournament_name in tournaments:
-        eval_set = (
-            data['validation'].x, data['validation'].y[tournament_name]
-        )
-        model = models.KerasModel()
-        try:
-            LOGGER.info(f"fitting model for {tournament_name}")
-            model.fit(
-                data['train'], 
-                tournament_name,
-                eval_set=eval_set
-            )
-        except Exception as e:
-            LOGGER.error(f"Training failed with {e}")
-            raise e
-
-        LOGGER.info(f"saving model for {tournament_name}")
-        model.save(f'keras_model_trained_{tournament_name}')
-
-
 def train_and_save_xgboost_model(
     tournament: str, 
     data: nx.data.Data, 
     load_model: bool = True,
-    save_model: bool = True) -> nx.Model:
+    save_model: bool = True,
+    params: Dict = None) -> nx.Model:
     """Train and persist model weights"""
 
     saved_model_name = f'xgboost_prediction_model_{tournament}'
@@ -71,8 +52,13 @@ def train_and_save_xgboost_model(
         LOGGER.info(f"using saved model for {tournament}")
         model = models.XGBoostModel().load(saved_model_name)
     else:
-        LOGGER.info(f"Saved model not found for {tournament}")
-        model = models.XGBoostModel()
+        LOGGER.info(f"Building XGBoostModel from scratch for {tournament}")
+        model = models.XGBoostModel(
+            max_depth=params["max_depth"], 
+            learning_rate=params["learning_rate"],
+            l2=params["l2"],
+            n_estimators=params["n_estimators"]
+        )
         LOGGER.info(f"Training XGBoost model for {tournament}")
         eval_set = [(
             data['validation'].x, data['validation'].y[tournament]
@@ -101,7 +87,7 @@ def train_and_save_lstm_model(
         LOGGER.info(f"using saved model for {tournament}")
         model = models.LSTMModel().load(saved_model_name)
     else:
-        LOGGER.info(f"Saved model not found for {tournament}")
+        LOGGER.info(f"Building LSTMModel from scratch for {tournament}")
         model = models.LSTMModel(time_steps=1)
         LOGGER.info(f"Training LSTM model for {tournament}")
         eval_set = (
@@ -133,7 +119,7 @@ def train_and_save_functional_lstm_model(
         LOGGER.info(f"using saved model for {tournament}")
         model = models.FunctionalLSTMModel().load(saved_model_name)
     else:
-        LOGGER.info(f"Saved model not found for {tournament}")
+        LOGGER.infp(f"Building FunctionalLSTMModel from scratch for {tournament}")
         model = models.FunctionalLSTMModel(time_steps=1)
         LOGGER.info(f"Training Functional LSTM model for {tournament}")
         eval_set = (
@@ -165,7 +151,7 @@ def train_and_save_bidirectional_lstm_model(
         LOGGER.info(f"using saved model for {tournament}")
         model = models.BidirectionalLSTMModel().load(saved_model_name)
     else:
-        LOGGER.info(f"Saved model not found for {tournament}")
+        LOGGER.info(f"Building BidirectionalLSTMModel from scratch for {tournament}")
         model = models.BidirectionalLSTMModel(time_steps=1)
         LOGGER.info(f"Training BidirectionalLSTM model for {tournament}")
         eval_set = (
@@ -189,7 +175,8 @@ def train_and_save_catboost_model(
     tournament: str, 
     data: nx.data.Data,
     load_model: bool = True,
-    save_model: bool = True) -> nx.Model:
+    save_model: bool = True,
+    params: Dict = None) -> nx.Model:
     """Train and persist model weights"""
 
     saved_model_name = f'catboost_prediction_model_{tournament}'
@@ -199,9 +186,12 @@ def train_and_save_catboost_model(
     else:
         LOGGER.info(f"Training CatBoostRegressorModel from scratch for {tournament} tournament")
         model = models.CatBoostRegressorModel(
-            depth=5, 
-            learning_rate=0.001
+                depth=params['depth'],
+                learning_rate=params['learning_rate'],
+                l2_leaf_reg=params['l2'],
+                iterations=params['iterations'],
             )
+        LOGGER.info(f"Training CatBoostRegressorModel for {tournament}")
         eval_set = (
             data['validation'].x, data['validation'].y[tournament]
         )
@@ -221,7 +211,8 @@ def train_and_save_lightgbm_model(
     tournament: str, 
     data: nx.data.Data,
     load_model: bool = True,
-    save_model: bool = True) -> nx.Model:
+    save_model: bool = True,
+    params: Dict = None) -> nx.Model:
     """Train and persist model weights"""
 
     saved_model_name = f'lightgbm_prediction_model_{tournament}'
@@ -229,8 +220,12 @@ def train_and_save_lightgbm_model(
         LOGGER.info(f"using saved model for {tournament}")
         model = models.LightGBMRegressorModel().load(saved_model_name)
     else:
-        LOGGER.info(f"Saved model not found for {tournament}")
-        model = models.LightGBMRegressorModel()
+        LOGGER.info(f"Building LightGBMRegressorModel from scratch for {tournament}")
+        model = models.LightGBMRegressorModel(
+            n_estimators=params['n_estimators'],
+            learning_rate=params['learning_rate'],
+            reg_lambda=params['reg_lambda']
+        )
         LOGGER.info(f"Training LightGBMRegressor model for {tournament}")
         eval_set = (
             data['validation'].x, data['validation'].y[tournament]
@@ -276,24 +271,6 @@ def train_ensemble_model(tournament: str, data: nx.data.Data) -> List[nx.Model]:
     #     model.save(f'lightgbm_prediction_model_{tournament}')
         
     return [lgbm, xgb]
-
-
-def train_lightgbm_model():
-    """Function to just train and not save model"""
-
-    tournaments, data = prepare_tournament_data()
-    LOGGER.info(f'Training and making predictions for {tournaments}')
-    for tournament_name in tournaments:
-        model = models.LightGBMRegressorModel()
-        LOGGER.info(f"Training LightGBMRegressor model for {tournament_name}")
-        eval_set = (
-            data['validation'].x, data['validation'].y[tournament_name]
-        )
-        model.fit(
-            dfit=data['train'], 
-            tournament=tournament_name,
-            eval_set=eval_set
-        )
 
 
 @click.command()
