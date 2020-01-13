@@ -22,7 +22,7 @@ XGBOOST_PARAMS = {
 LIGHTGBM_PARAMS = {
     "n_estimators": 2579,
     "learning_rate": 0.00111325,
-    "reg_lambda": 0.111561
+    "reg_lambda": 0.0111561
 }
 
 CATBOOST_PARAMS = {
@@ -87,8 +87,8 @@ def train_and_predict_xgboost_model(submit_to_numerai) -> Any:
         model: nx.Model = train.train_and_save_xgboost_model(
             tournament=tournament_name, 
             data=data,
-            load_model=True,
-            save_model=False,
+            load_model=False,
+            save_model=True,
             params=XGBOOST_PARAMS
             )
         predictions: nx.Prediction = make_predictions_and_prepare_submission(
@@ -269,6 +269,39 @@ def train_and_predict_ensemble():
     return predictions
 
 
+def train_and_predict_voting_regressor_model(submit_to_numerai) -> Any:
+    """Trains VotingRegressorModel and save weights"""
+
+    tournaments, data = prepare_tournament_data()
+    LOGGER.info(f'Training and making predictions for {tournaments}')
+    for tournament_name in tournaments:
+        model: nx.Model = train.train_and_save_voting_regressor_model(
+            tournament=tournament_name, 
+            data=data,
+            load_model=False,
+            save_model=True,
+            )
+        predictions: nx.Prediction = make_predictions_and_prepare_submission(
+            model=model,
+            model_name='voting_regressor',
+            data=data,
+            tournament=tournament_name,
+            submit=submit_to_numerai
+            )
+        LOGGER.info(
+            predictions.summaries(
+            data['validation'], 
+            tournament=tournament_name)
+        )
+        LOGGER.info(
+            predictions[:, tournament_name].metric_per_era(
+                data=data['validation'], 
+                tournament=tournament_name)
+            )
+
+    return predictions
+
+
 @click.command()
 @click.option('-m', '--model', type=str, default='xgboost')
 @click.option('-s', '--submit', type=bool, default=False)
@@ -286,6 +319,8 @@ def main(model: str, submit) -> Any:
         return train_and_predict_functional_lstm_model()
     if model == 'ensemble':
         return train_and_predict_ensemble()
+    if model == 'voting_regressor':
+        return train_and_predict_voting_regressor_model(submit)
 
 
 if __name__ == "__main__":

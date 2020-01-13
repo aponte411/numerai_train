@@ -25,6 +25,7 @@ bidirectional_lstm_prediction_model_kazutsugi
 functional_lstm_prediction_model_kazutsugi
 keras_lstm_model_trained_kazutsugi
 keras_bidirectional_lstm_model_trained_kazutsugi
+voting_regressor_prediction_model_kazutsugi
 
 
 catboost_info

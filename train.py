@@ -273,6 +273,32 @@ def train_ensemble_model(tournament: str, data: nx.data.Data) -> List[nx.Model]:
     return [lgbm, xgb]
 
 
+def train_and_save_voting_regressor_model(
+    tournament: str, 
+    data: nx.data.Data,
+    load_model: bool = True,
+    save_model: bool = True) -> nx.Model:
+    """Train and persist model weights"""
+
+    saved_model_name = f'voting_regressor_prediction_model_{tournament}'
+    if load_model:
+        LOGGER.info(f"using saved model for {tournament}")
+        model = models.VotingRegressorModel().load(saved_model_name)
+    else:
+        LOGGER.info(f"Training VotingRegressorModel from scratch for {tournament} tournament")
+        model = models.VotingRegressorModel()
+        LOGGER.info(f"Training VotingRegressorModel for {tournament}")
+        model.fit(
+            dfit=data['train'], 
+            tournament=tournament
+        )
+    if save_model:
+        LOGGER.info(f"Saving model for {tournament}")
+        model.save(f'voting_regressor_prediction_model_{tournament}')
+        
+    return model
+
+
 @click.command()
 @click.option('-m', '--model', type=str, default='xgboost')
 @click.option('-t', '--tournament', type=str, default=CURRENT_TOURNAMENT)

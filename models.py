@@ -5,17 +5,32 @@ import joblib
 from typing import Any, Tuple, List
 from datetime import datetime
 from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import (
+    RandomForestRegressor, 
+    ExtraTreesRegressor, 
+    GradientBoostingRegressor, 
+    VotingRegressor,
+    StackingRegressor
+    )
 from xgboost import XGBRegressor
 import xgboost as xgb
 from catboost import CatBoostRegressor
 from lightgbm import LGBMRegressor
 from keras import layers, Sequential
 from keras import metrics
-from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
+from keras.callbacks import (
+    EarlyStopping, 
+    ModelCheckpoint, 
+    TensorBoard
+    )
 from keras.preprocessing.sequence import TimeseriesGenerator
 from keras_functional_lstm import LstmModel
 from utils import get_logger
-from metrics import correlation_coefficient_loss, get_spearman_rankcor, correlations
+from metrics import (
+    correlation_coefficient_loss,
+    get_spearman_rankcor, 
+    correlations
+    )
 
 LOGGER = get_logger(__name__)
 
@@ -668,6 +683,185 @@ class CatBoostRegressorModel(nx.Model):
             X=dfit.x, 
             y=dfit.y[tournament],
             eval_set=eval_set
+        )
+
+    def predict(self, dpre: nx.data.Data, tournament: str) -> Any:
+        """
+        Alternative to fit_predict() 
+        dpre: must be data['tournament']
+        tournament: can be int or str.
+        """
+
+        prediction = nx.Prediction()
+        data_predict = dpre.y_to_nan()
+        try:
+            LOGGER.info('Inference started...')
+            yhat = self.model.predict(data_predict.x)
+            LOGGER.info('Inference complete...now preparing predictions for submission')
+        except Exception as e:
+            LOGGER.error(f'Failure to make predictions with {e}')
+            raise e 
+
+        try:
+            prediction = prediction.merge_arrays(
+                data_predict.ids, 
+                yhat, 
+                self.name, 
+                tournament)
+            return prediction
+        except Exception as e:
+            LOGGER.error(f'Failure to prepare predictions with {e}')
+            raise e
+
+    def fit_predict(self, dfit, dpre, tournament):
+        # fit is done separately in `.fit()`
+
+        yhat = self.model.predict(dpre.x)
+
+        return dpre.ids, yhat
+
+    def save(self, filename):
+        joblib.dump(self, filename)
+
+    @classmethod
+    def load(cls, filename):
+        return joblib.load(filename)
+
+
+class VotingRegressorModel(nx.Model):
+    """
+    VotingRegressorModel that uses
+    XGBRegressor, RandomForestRegressor, LightGBMRegressor,
+    CatBoostRegressor, LinearRegression, ExtraTreesRegressor, 
+    and GradientBoostingRegressor.
+    """
+
+    def __init__(self):
+        self.params = None
+        self.model = VotingRegressor([
+            ('XGBoost', XGBRegressor(
+                max_depth=5, 
+                learning_rate=0.001,
+                l2=0.01,
+                n_estimators=1000
+            )),
+            ('RandomForest', RandomForestRegressor()),
+            ('LightGBM', LGBMRegressor(
+                n_estimators=100,
+                learning_rate=0.01,
+                reg_lambda=0.1
+            )),
+            ('CatBoost', CatBoostRegressor(
+                depth=4,
+                learning_rate=0.0001,
+                l2_leaf_reg=0.2,
+                iterations=300
+            )),
+            ('LinearRegression', LinearRegression()),
+            ('ExtraTrees', ExtraTreesRegressor()),
+            ('GradientBoosting', GradientBoostingRegressor())
+        ])
+
+    def fit(
+        self, 
+        dfit: nx.data.Data, 
+        tournament: str, 
+        eval_set=None,
+        eval_metric=None) -> Any:
+
+        self.model.fit(
+            X=dfit.x, 
+            y=dfit.y[tournament]
+        )
+
+    def predict(self, dpre: nx.data.Data, tournament: str) -> Any:
+        """
+        Alternative to fit_predict() 
+        dpre: must be data['tournament']
+        tournament: can be int or str.
+        """
+
+        prediction = nx.Prediction()
+        data_predict = dpre.y_to_nan()
+        try:
+            LOGGER.info('Inference started...')
+            yhat = self.model.predict(data_predict.x)
+            LOGGER.info('Inference complete...now preparing predictions for submission')
+        except Exception as e:
+            LOGGER.error(f'Failure to make predictions with {e}')
+            raise e 
+
+        try:
+            prediction = prediction.merge_arrays(
+                data_predict.ids, 
+                yhat, 
+                self.name, 
+                tournament)
+            return prediction
+        except Exception as e:
+            LOGGER.error(f'Failure to prepare predictions with {e}')
+            raise e
+
+    def fit_predict(self, dfit, dpre, tournament):
+        # fit is done separately in `.fit()`
+
+        yhat = self.model.predict(dpre.x)
+
+        return dpre.ids, yhat
+
+    def save(self, filename):
+        joblib.dump(self, filename)
+
+    @classmethod
+    def load(cls, filename):
+        return joblib.load(filename)
+
+
+class StackingRegressorModel(nx.Model):
+    """
+    StackingRegressorModel that uses XGBRegressor, 
+    RandomForestRegressor, LightGBMRegressor,
+    CatBoostRegressor, ExtraTreesRegressor,
+    and GradientBoostingRegressor.
+    """
+
+    def __init__(self):
+        self.params = None
+        self.model = StackingRegressor(
+            estimators=[
+            ('XGBoost', XGBRegressor(
+                max_depth=5, 
+                learning_rate=0.001,
+                l2=0.01,
+                n_estimators=1000
+            )),
+            ('RandomForest', RandomForestRegressor()),
+            ('LightGBM', LGBMRegressor(
+                n_estimators=1000,
+                learning_rate=0.001,
+                reg_lambda=0.001
+            )),
+            ('CatBoost', CatBoostRegressor(
+                depth=4,
+                learning_rate=0.0001,
+                l2_leaf_reg=0.2,
+                iterations=500
+            )),
+            ('ExtraTrees', ExtraTreesRegressor()),
+            ('GradientBoosting', GradientBoostingRegressor())
+        ],
+        final_estimator=RandomForestRegressor()
+        )
+    def fit(
+        self, 
+        dfit: nx.data.Data, 
+        tournament: str, 
+        eval_set=None,
+        eval_metric=None) -> Any:
+
+        self.model.fit(
+            X=dfit.x, 
+            y=dfit.y[tournament]
         )
 
     def predict(self, dpre: nx.data.Data, tournament: str) -> Any:
