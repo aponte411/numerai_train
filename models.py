@@ -830,14 +830,13 @@ class StackingRegressorModel(nx.Model):
         self.model = StackingRegressor(
             estimators=[
             ('XGBoost', XGBRegressor(
-                max_depth=5, 
+                max_depth=7, 
                 learning_rate=0.001,
                 l2=0.01,
-                n_estimators=1000
+                n_estimators=500
             )),
-            ('RandomForest', RandomForestRegressor()),
             ('LightGBM', LGBMRegressor(
-                n_estimators=1000,
+                n_estimators=300,
                 learning_rate=0.001,
                 reg_lambda=0.001
             )),

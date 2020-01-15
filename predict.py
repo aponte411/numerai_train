@@ -302,6 +302,39 @@ def train_and_predict_voting_regressor_model(submit_to_numerai) -> Any:
     return predictions
 
 
+def train_and_predict_stacking_regressor_model(submit_to_numerai) -> Any:
+    """Trains StackingRegressorModel and save weights"""
+
+    tournaments, data = prepare_tournament_data()
+    LOGGER.info(f'Training and making predictions for {tournaments}')
+    for tournament_name in tournaments:
+        model: nx.Model = train.train_and_save_stacking_regressor_model(
+            tournament=tournament_name, 
+            data=data,
+            load_model=False,
+            save_model=True,
+            )
+        predictions: nx.Prediction = make_predictions_and_prepare_submission(
+            model=model,
+            model_name='stacking_regressor',
+            data=data,
+            tournament=tournament_name,
+            submit=submit_to_numerai
+            )
+        LOGGER.info(
+            predictions.summaries(
+            data['validation'], 
+            tournament=tournament_name)
+        )
+        LOGGER.info(
+            predictions[:, tournament_name].metric_per_era(
+                data=data['validation'], 
+                tournament=tournament_name)
+            )
+
+    return predictions
+
+
 @click.command()
 @click.option('-m', '--model', type=str, default='xgboost')
 @click.option('-s', '--submit', type=bool, default=False)
@@ -321,6 +354,8 @@ def main(model: str, submit) -> Any:
         return train_and_predict_ensemble()
     if model == 'voting_regressor':
         return train_and_predict_voting_regressor_model(submit)
+    if model == 'stacking_regressor':
+        return train_and_predict_stacking_regressor_model(submit)
 
 
 if __name__ == "__main__":

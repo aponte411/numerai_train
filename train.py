@@ -299,6 +299,32 @@ def train_and_save_voting_regressor_model(
     return model
 
 
+def train_and_save_stacking_regressor_model(
+    tournament: str, 
+    data: nx.data.Data,
+    load_model: bool = True,
+    save_model: bool = True) -> nx.Model:
+    """Train and persist model weights"""
+
+    saved_model_name = f'stacking_regressor_prediction_model_{tournament}'
+    if load_model:
+        LOGGER.info(f"using saved model for {tournament}")
+        model = models.StackingRegressorModel().load(saved_model_name)
+    else:
+        LOGGER.info(f"Training StackingRegressorModel from scratch for {tournament} tournament")
+        model = models.StackingRegressorModel()
+        LOGGER.info(f"Training StackingRegressorModel for {tournament}")
+        model.fit(
+            dfit=data['train'], 
+            tournament=tournament
+        )
+    if save_model:
+        LOGGER.info(f"Saving model for {tournament}")
+        model.save(f'stacking_regressor_prediction_model_{tournament}')
+        
+    return model
+
+
 @click.command()
 @click.option('-m', '--model', type=str, default='xgboost')
 @click.option('-t', '--tournament', type=str, default=CURRENT_TOURNAMENT)
