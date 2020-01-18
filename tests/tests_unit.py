@@ -1,11 +1,11 @@
 from abc import abstractmethod
 import numerox as nx
-import pandas as pd 
+import pandas as pd
 import numpy as np
 import pytest
 import joblib
 import models
-
+from utils import S3Client
 
 DUMMY_DF = pd.DataFrame({
     "x": np.random.random(1000),
@@ -15,28 +15,28 @@ DUMMY_DF = pd.DataFrame({
 
 
 class Model:
+    def __init__(self):
+        pass
+
     @abstractmethod
     def fit(self, X, y):
-
         features = X is not None
         targets = y is not None
-
-        return features, targets 
+        return features, targets
 
     @abstractmethod
     def predict(self, X):
-
         features = X is not None
+        return features
 
-        return features 
 
 def test_model():
     results = Model().fit(DUMMY_DF.x, DUMMY_DF.y)
-    assert results[0] == True 
+    assert results[0] == True
     assert results[1] == True
-    assert Model().predict(DUMMY_DF.x) == True 
+    assert Model().predict(DUMMY_DF.x) == True
 
-    
+
 class DummyModel(nx.Model):
     def __init__(self, verbose=False):
         super(DummyModel).__init__()
@@ -48,11 +48,12 @@ class DummyModel(nx.Model):
         return self.model.fit(X, y)
 
     def fit_predict(self, dfit, dpre, tournament):
-        # fit is done separately in `.fit()`
-
         yhat = self.model.predict(dpre.x)
-        
         return dpre.ids, yhat
+
+    def save_to_s3(self, filename: str, key: str) -> None:
+        s3 = S3Client()
+        s3.upload_file(filename=filename, key=key)
 
     def save(self, filename):
         joblib.dump(self, filename)
@@ -63,14 +64,9 @@ class DummyModel(nx.Model):
 
 
 @pytest.fixture(params=[
-    models.LSTMModel,
-    models.XGBoostModel,
-    models.CatBoostRegressorModel,
-    models.LightGBMRegressorModel,
-    models.LinearModel,
-    models.BidirectionalLSTMModel,
-    models.FunctionalLSTMModel,
-    DummyModel
+    models.LSTMModel, models.XGBoostModel, models.CatBoostRegressorModel,
+    models.LightGBMRegressorModel, models.LinearModel,
+    models.BidirectionalLSTMModel, models.FunctionalLSTMModel, DummyModel
 ])
 def model(request):
     """
@@ -82,22 +78,25 @@ def model(request):
 
     return request.param
 
+
 def test_model_subclass(model):
     assert issubclass(model, nx.Model) == True
+
 
 def test_model_name(model):
     assert model().name is not None
 
+
 def test_model_fit_method(model):
     # model().fit(DUMMY_DF.x, DUMMY_DF.y)
-    pass 
+    pass
+
 
 def test_model_predict_method():
     # DUMMY_DF['y_hat'] = model().predict(DUMMY.x_test)
     # assert DUMMY_DF['yhat'] is not None
-    pass 
+    pass
+
 
 def test_model_submission():
-    pass 
-
-
+    pass

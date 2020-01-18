@@ -1,6 +1,7 @@
 # numerai_train
 
-This repo contains code to train Numerai models and make submissions to the Numerai competition.
+This repo contains code to train models using the numerox api and make submissions to the Numerai competition. 
+
 https://docs.numer.ai/tournament/learn
 
 # Setup

@@ -9,3 +9,4 @@ tensorflow
 pytest
 spotty
 click
+boto3
