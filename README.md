@@ -41,3 +41,11 @@ With `numerai_train` as your working directory, run the following from the comma
 
 # Training models using AWS ECS
 WIP
+
+# Running experiments on Polyaxon
+
+- `polyaxon login --username=root --password=rootpassword`
+- `polyaxon project create --name=numerai_training --description='Train models on polyaxon'`
+- `polyaxon init numerai_training`
+- CPU: `polyaxon run -f configs/polyaxon_cpu.yaml`
+- GPU: `polyaxon run -f configs/polyaxon_gpu.yaml`
