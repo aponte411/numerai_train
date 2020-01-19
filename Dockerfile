@@ -2,6 +2,7 @@ FROM python:3.7
 
 ADD requirements.txt .
 RUN pip install -r requirements.txt
+RUN pip install polyaxon-client[s3]
 
 ADD . .
 
@@ -11,4 +12,13 @@ ENV NUMERAI_PUBLIC_ID=$NUMERAI_PUBLIC_ID
 ARG NUMERAI_SECRET_KEY
 ENV NUMERAI_SECRET_KEY=$NUMERAI_SECRET_KEY
 
-CMD [ "python", "./train.py", "--model lstm"]
+ARG AWS_ACCESS_KEY_ID
+ENV AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+
+ARG AWS_SECRET_ACCESS_KEY
+ENV AWS_SECRET_ACCESS_KEYD=$AWS_SECRET_ACCESS_KEY
+
+ARG BUCKET
+ENV BUCKET=$BUCKET
+
+CMD [ "python", "predict.py", "--model xgboost"]

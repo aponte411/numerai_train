@@ -53,8 +53,8 @@ def get_correlations(training_data: pd.DataFrame,
         f"On training the average per-era payout is {payout(train_correlations).mean()}"
     )
 
-    validation_data = tournament_data[tournament_data.data_type ==
-                                      "validation"]
+    validation_data = tournament_data.loc[tournament_data.data_type ==
+                                          "validation"]
     validation_correlations = validation_data.groupby("era").apply(score)
     print(
         f"On validation the correlation has mean {validation_correlations.mean()} and std {validation_correlations.std()}"

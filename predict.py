@@ -16,7 +16,7 @@ XGBOOST_PARAMS = {
     "max_depth": 5,
     "learning_rate": 0.00123,
     "l2": 0.02,
-    "n_estimators": 100
+    "n_estimators": 2511
 }
 
 LIGHTGBM_PARAMS = {

@@ -7,10 +7,27 @@ framework: xgboost
 
 tags: [train_models]
 
+environment:
+  resources:
+    cpu:
+      requests: 4
+      limits: 15
+    memory:
+      requests: 10000
+      limits: 30000
+
+persistence:
+  data-s3:
+    store: s3
+    bucket: s3://numerai-training
+    secret: s3-secret
+    secretKey: s3-key
+
 build:
   image: gitlab.beno.ai:4567/ai/hypgen/sammi:master-cpu-20fdd6ba
   build_steps:
+    - pip install polyaxon-client[s3]
     - pip install -r requirements.txt
 
 run:
-  cmd: python predict.py --model xgboost
+  cmd: python -u predict.py --model lstm

@@ -30,3 +30,7 @@ voting_regressor_prediction_model_kazutsugi
 catboost_info
 
 *.polyaxon
+
+s3-key.json 
+
+.DS_Store
