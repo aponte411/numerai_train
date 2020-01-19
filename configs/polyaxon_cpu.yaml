@@ -14,9 +14,9 @@ environment:
       limits: 1
 
 build:
-  image: gitlab.beno.ai:4567/ai/hypgen/optimus-prime/gpu2:baiflow
+  image: gitlab.beno.ai:4567/ai/hypgen/sammi:master-cpu-20fdd6ba
   build_steps:
     - pip install -r requirements.txt
 
 run:
-  cmd: python -u /predict.py --model xgboost
+  cmd: python predict.py --model xgboost

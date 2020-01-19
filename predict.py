@@ -10,8 +10,7 @@ import train
 
 LOGGER = get_logger(__name__)
 
-# DEFINE PARAMS HERE
-LSTM_PARAMS = {'epochs': 1, 'batch_size': 120}
+# DEFINE PARAMS
 
 XGBOOST_PARAMS = {
     "max_depth": 5,
