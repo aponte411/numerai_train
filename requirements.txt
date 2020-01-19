@@ -1,6 +1,6 @@
 numerox>=4
+scikit-learn==0.22.1
 numerapi
-scikit-learn
 xgboost
 catboost
 lightgbm

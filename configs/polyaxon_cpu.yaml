@@ -7,12 +7,6 @@ framework: xgboost
 
 tags: [train_models]
 
-environment:
-  resources:
-    gpu:
-      requests: 1
-      limits: 1
-
 build:
   image: gitlab.beno.ai:4567/ai/hypgen/sammi:master-cpu-20fdd6ba
   build_steps:
