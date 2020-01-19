@@ -16,7 +16,7 @@ XGBOOST_PARAMS = {
     "max_depth": 5,
     "learning_rate": 0.00123,
     "l2": 0.02,
-    "n_estimators": 2579
+    "n_estimators": 100
 }
 
 LIGHTGBM_PARAMS = {
@@ -86,8 +86,8 @@ def train_and_predict_xgboost_model(submit_to_numerai) -> Any:
         model: nx.Model = train.train_and_save_xgboost_model(
             tournament=tournament_name,
             data=data,
-            load_model=False,
-            save_model=True,
+            load_model=True,
+            save_model=False,
             params=XGBOOST_PARAMS)
         predictions: nx.Prediction = make_predictions_and_prepare_submission(
             model=model,

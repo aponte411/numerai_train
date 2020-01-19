@@ -7,7 +7,6 @@ import numerox as nx
 import boto3
 from boto3.s3 import transfer
 
-
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s = %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S")
@@ -163,7 +162,6 @@ class S3Client:
                  user=os.environ["AWS_ACCESS_KEY_ID"],
                  password=os.environ["AWS_SECRET_ACCESS_KEY"],
                  bucket=os.environ["BUCKET"]):
-        self.src = src
         self.bucket = bucket
         self.client = boto3.client('s3',
                                    aws_access_key_id=user,
@@ -172,4 +170,4 @@ class S3Client:
     def upload_file(self, filename: str, key: str) -> None:
 
         s3t = transfer.S3Transfer(self.client)
-        s3t.upload_file(filename, self.bucket, self.key)
+        s3t.upload_file(filename, self.bucket, key)
