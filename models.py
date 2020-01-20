@@ -583,6 +583,12 @@ class LightGBMRegressorModel(nx.Model):
 
         return dpre.ids, yhat
 
+    def save_to_s3(self, filename: str, key: str) -> None:
+        """Save model to s3 bucket"""
+
+        s3 = S3Client()
+        s3.upload_file(filename=filename, key=key)
+
     def save(self, filename) -> None:
         """Serialize model"""
 
@@ -649,6 +655,12 @@ class CatBoostRegressorModel(nx.Model):
         yhat = self.model.predict(dpre.x)
 
         return dpre.ids, yhat
+
+    def save_to_s3(self, filename: str, key: str) -> None:
+        """Save model to s3 bucket"""
+
+        s3 = S3Client()
+        s3.upload_file(filename=filename, key=key)
 
     def save(self, filename) -> None:
         """Serialize model"""

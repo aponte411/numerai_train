@@ -19,4 +19,4 @@ build:
     - pip install -r requirements.txt
 
 run:
-  cmd: python -u /predict.py --model lstm
+  cmd: python -u predict.py --model lstm

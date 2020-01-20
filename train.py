@@ -176,8 +176,10 @@ def train_and_save_catboost_model(tournament: str,
         eval_set = (data['validation'].x, data['validation'].y[tournament])
         model.fit(dfit=data['train'], tournament=tournament, eval_set=eval_set)
     if save_model:
-        LOGGER.info(f"Saving model for {tournament}")
+        LOGGER.info(f"Saving model for {tournament} locally")
         model.save(f'catboost_prediction_model_{tournament}')
+        LOGGER.info(f"Saving model for {tournament} to s3 bucket")
+        model.save_to_s3(filename=saved_model_name, key=saved_model_name)
 
     return model
 
@@ -204,8 +206,10 @@ def train_and_save_lightgbm_model(tournament: str,
         eval_set = (data['validation'].x, data['validation'].y[tournament])
         model.fit(dfit=data['train'], tournament=tournament, eval_set=eval_set)
     if save_model:
-        LOGGER.info(f"Saving model for {tournament}")
-        model.save(f'lightgbm_prediction_model_{tournament}')
+        LOGGER.info(f"Saving model for {tournament} locally")
+        model.save(saved_model_name)
+        LOGGER.info(f"Saving model for {tournament} to s3 bucket")
+        model.save_to_s3(filename=saved_model_name, key=saved_model_name)
 
     return model
 

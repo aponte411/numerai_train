@@ -20,7 +20,7 @@ XGBOOST_PARAMS = {
 }
 
 LIGHTGBM_PARAMS = {
-    "n_estimators": 2579,
+    "n_estimators": 1234,
     "learning_rate": 0.00111325,
     "reg_lambda": 0.0111561
 }
@@ -113,8 +113,8 @@ def train_and_predict_lightgbm_model(submit_to_numerai: bool) -> Any:
         model: nx.Model = train.train_and_save_lightgbm_model(
             tournament=tournament_name,
             data=data,
-            load_model=True,
-            save_model=False,
+            load_model=False,
+            save_model=True,
             params=LIGHTGBM_PARAMS)
         predictions: nx.Prediction = make_predictions_and_prepare_submission(
             model=model,
