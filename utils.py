@@ -171,3 +171,8 @@ class S3Client:
 
         s3t = transfer.S3Transfer(self.client)
         s3t.upload_file(filename, self.bucket, key)
+
+    def download_file(self, filename: str, key: str) -> None:
+
+        s3t = transfer.S3Transfer(self.client)
+        s3t.download_file(self.bucket, key, filename)

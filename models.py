@@ -123,6 +123,12 @@ class XGBoostModel(nx.Model):
         s3 = S3Client()
         s3.upload_file(filename=filename, key=key)
 
+    def load_from_s3(self, filename: str, key: str) -> None:
+        """Download model from s3 bucket"""
+
+        s3 = S3Client()
+        s3.download_file(filename=filename, key=key)
+
     def save(self, filename) -> None:
         """Serialize model locally"""
 
@@ -271,6 +277,12 @@ class LSTMModel(nx.Model):
 
         s3 = S3Client()
         s3.upload_file(filename=filename, key=key)
+    
+    def load_from_s3(self, filename: str, key: str) -> None:
+        """Download model from s3 bucket"""
+
+        s3 = S3Client()
+        s3.download_file(filename=filename, key=key)
 
     def save(self, filename) -> None:
         """Serialize model"""
@@ -378,6 +390,18 @@ class FunctionalLSTMModel(nx.Model):
         yhat = self.model.predict(dpre.x)
 
         return dpre.ids, yhat
+    
+    def save_to_s3(self, filename: str, key: str) -> None:
+        """Save model to s3 bucket"""
+
+        s3 = S3Client()
+        s3.upload_file(filename=filename, key=key)
+
+    def load_from_s3(self, filename: str, key: str) -> None:
+        """Download model from s3 bucket"""
+
+        s3 = S3Client()
+        s3.download_file(filename=filename, key=key)
 
     def save(self, filename) -> None:
         """Serialize model"""
@@ -511,6 +535,18 @@ class BidirectionalLSTMModel(nx.Model):
         yhat = self.model.predict(dpre.x)
 
         return dpre.ids, yhat
+    
+    def save_to_s3(self, filename: str, key: str) -> None:
+        """Save model to s3 bucket"""
+
+        s3 = S3Client()
+        s3.upload_file(filename=filename, key=key)
+
+    def load_from_s3(self, filename: str, key: str) -> None:
+        """Download model from s3 bucket"""
+
+        s3 = S3Client()
+        s3.download_file(filename=filename, key=key)
 
     def save(self, filename):
         """Serialize model"""
@@ -588,6 +624,12 @@ class LightGBMRegressorModel(nx.Model):
 
         s3 = S3Client()
         s3.upload_file(filename=filename, key=key)
+    
+    def load_from_s3(self, filename: str, key: str) -> None:
+        """Download model from s3 bucket"""
+
+        s3 = S3Client()
+        s3.download_file(filename=filename, key=key)
 
     def save(self, filename) -> None:
         """Serialize model"""
@@ -661,6 +703,12 @@ class CatBoostRegressorModel(nx.Model):
 
         s3 = S3Client()
         s3.upload_file(filename=filename, key=key)
+    
+    def load_from_s3(self, filename: str, key: str) -> None:
+        """Download model from s3 bucket"""
+
+        s3 = S3Client()
+        s3.download_file(filename=filename, key=key)
 
     def save(self, filename) -> None:
         """Serialize model"""

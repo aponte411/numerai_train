@@ -46,8 +46,11 @@ def train_and_save_xgboost_model(tournament: str,
 
     saved_model_name = f'xgboost_prediction_model_{tournament}'
     if load_model:
-        LOGGER.info(f"using saved model for {tournament}")
-        model = models.XGBoostModel().load(saved_model_name)
+        LOGGER.info(f"Using saved model for {tournament}")
+        model = models.XGBoostModel()
+        model.load_from_s3(filename=saved_model_name, key=saved_model_name)
+        model = model.load(saved_model_name)
+        LOGGER.info(f"Trained model loaded from s3")
     else:
         LOGGER.info(f"Building XGBoostModel from scratch for {tournament}")
         model = models.XGBoostModel(max_depth=params["max_depth"],
@@ -59,7 +62,7 @@ def train_and_save_xgboost_model(tournament: str,
         model.fit(dfit=data['train'], tournament=tournament, eval_set=eval_set)
     if save_model:
         LOGGER.info(f"Saving model for {tournament} locally")
-        model.save(f'xgboost_prediction_model_{tournament}')
+        model.save(saved_model_name)
         LOGGER.info(f"Saving model for {tournament} to s3 bucket")
         model.save_to_s3(filename=saved_model_name, key=saved_model_name)
 
@@ -76,7 +79,10 @@ def train_and_save_lstm_model(tournament: str,
     saved_model_name = f'lstm_prediction_model_{tournament}'
     if load_model:
         LOGGER.info(f"using saved model for {tournament}")
-        model = models.LSTMModel().load(saved_model_name)
+        model = models.LSTMModel()
+        model.load_from_s3(filename=saved_model_name, key=saved_model_name)
+        model = model.load(saved_model_name)
+        LOGGER.info(f"Trained model loaded from s3")
     else:
         LOGGER.info(f"Building LSTMModel from scratch for {tournament}")
         model = models.LSTMModel(time_steps=1)
@@ -92,6 +98,7 @@ def train_and_save_lstm_model(tournament: str,
         model.save(saved_model_name)
         LOGGER.info(f"Saving model for {tournament} to s3 bucket")
         model.save_to_s3(filename=saved_model_name, key=saved_model_name)
+
     return model
 
 
@@ -104,7 +111,10 @@ def train_and_save_functional_lstm_model(tournament: str,
     saved_model_name = f'functional_lstm_prediction_model_{tournament}'
     if load_model:
         LOGGER.info(f"using saved model for {tournament}")
-        model = models.FunctionalLSTMModel().load(saved_model_name)
+        model = models.FunctionalLSTMModel()
+        model.load_from_s3(filename=saved_model_name, key=saved_model_name)
+        model = model.load(saved_model_name)
+        LOGGER.info(f"Trained model loaded from s3")
     else:
         LOGGER.infp(
             f"Building FunctionalLSTMModel from scratch for {tournament}")
@@ -118,7 +128,9 @@ def train_and_save_functional_lstm_model(tournament: str,
                   batch_size=30)
     if save_model:
         LOGGER.info(f"Saving model for {tournament}")
-        model.save(f'functional_lstm_prediction_model_{tournament}')
+        model.save(saved_model_name)
+        LOGGER.info(f"Saving model for {tournament} to s3 bucket")
+        model.save_to_s3(filename=saved_model_name, key=saved_model_name)
 
     return model
 
@@ -132,7 +144,10 @@ def train_and_save_bidirectional_lstm_model(tournament: str,
     saved_model_name = f'bidirectional_lstm_prediction_model_{tournament}'
     if load_model:
         LOGGER.info(f"using saved model for {tournament}")
-        model = models.BidirectionalLSTMModel().load(saved_model_name)
+        model = models.BidirectionalLSTMModel()
+        model.load_from_s3(filename=saved_model_name, key=saved_model_name)
+        model = model.load(saved_model_name)
+        LOGGER.info(f"Trained model loaded from s3")
     else:
         LOGGER.info(
             f"Building BidirectionalLSTMModel from scratch for {tournament}")
@@ -145,8 +160,10 @@ def train_and_save_bidirectional_lstm_model(tournament: str,
                   epochs=1,
                   batch_size=30)
     if save_model:
-        LOGGER.info(f"Saving model for {tournament}")
-        model.save(f'bidirectional_lstm_prediction_model_{tournament}')
+        LOGGER.info(f"Saving model for {tournament} locally")
+        model.save(saved_model_name)
+        LOGGER.info(f"Saving model for {tournament} to s3 bucket")
+        model.save_to_s3(filename=saved_model_name, key=saved_model_name)
 
     return model
 
@@ -161,7 +178,10 @@ def train_and_save_catboost_model(tournament: str,
     saved_model_name = f'catboost_prediction_model_{tournament}'
     if load_model:
         LOGGER.info(f"using saved model for {tournament}")
-        model = models.CatBoostRegressorModel().load(saved_model_name)
+        model = models.CatBoostRegressorModel()
+        model.load_from_s3(filename=saved_model_name, key=saved_model_name)
+        model = model.load(saved_model_name)
+        LOGGER.info(f"Trained model loaded from s3")
     else:
         LOGGER.info(
             f"Training CatBoostRegressorModel from scratch for {tournament} tournament"
@@ -177,7 +197,7 @@ def train_and_save_catboost_model(tournament: str,
         model.fit(dfit=data['train'], tournament=tournament, eval_set=eval_set)
     if save_model:
         LOGGER.info(f"Saving model for {tournament} locally")
-        model.save(f'catboost_prediction_model_{tournament}')
+        model.save(saved_model_name)
         LOGGER.info(f"Saving model for {tournament} to s3 bucket")
         model.save_to_s3(filename=saved_model_name, key=saved_model_name)
 
@@ -194,7 +214,10 @@ def train_and_save_lightgbm_model(tournament: str,
     saved_model_name = f'lightgbm_prediction_model_{tournament}'
     if load_model:
         LOGGER.info(f"using saved model for {tournament}")
-        model = models.LightGBMRegressorModel().load(saved_model_name)
+        model = models.LightGBMRegressorModel()
+        model.load_from_s3(filename=saved_model_name, key=saved_model_name)
+        model = model.load(saved_model_name)
+        LOGGER.info(f"Trained model loaded from s3")
     else:
         LOGGER.info(
             f"Building LightGBMRegressorModel from scratch for {tournament}")
@@ -233,7 +256,7 @@ def train_and_save_voting_regressor_model(tournament: str,
         model.fit(dfit=data['train'], tournament=tournament)
     if save_model:
         LOGGER.info(f"Saving model for {tournament}")
-        model.save(f'voting_regressor_prediction_model_{tournament}')
+        model.save(saved_model_name)
 
     return model
 
@@ -258,7 +281,7 @@ def train_and_save_stacking_regressor_model(
         model.fit(dfit=data['train'], tournament=tournament)
     if save_model:
         LOGGER.info(f"Saving model for {tournament}")
-        model.save(f'stacking_regressor_prediction_model_{tournament}')
+        model.save(saved_model_name)
 
     return model
 
