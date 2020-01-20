@@ -39,8 +39,8 @@ def train_linear_model() -> None:
 
 def train_and_save_xgboost_model(tournament: str,
                                  data: nx.data.Data,
-                                 load_model: bool = True,
-                                 save_model: bool = True,
+                                 load_model: bool,
+                                 save_model: bool,
                                  params: Dict = None) -> nx.Model:
     """Train and persist model weights"""
 
@@ -104,8 +104,9 @@ def train_and_save_lstm_model(tournament: str,
 
 def train_and_save_functional_lstm_model(tournament: str,
                                          data: nx.data.Data,
-                                         load_model: bool = True,
-                                         save_model: bool = False) -> nx.Model:
+                                         load_model: bool,
+                                         save_model: bool,
+                                         params: Dict = None) -> nx.Model:
     """Train and persist model weights"""
 
     saved_model_name = f'functional_lstm_prediction_model_{tournament}'
@@ -124,8 +125,8 @@ def train_and_save_functional_lstm_model(tournament: str,
         model.fit(dfit=data['train'],
                   tournament=tournament,
                   eval_set=eval_set,
-                  epochs=1,
-                  batch_size=30)
+                  epochs=params['epochs'],
+                  batch_size=params['batch_size'])
     if save_model:
         LOGGER.info(f"Saving model for {tournament}")
         model.save(saved_model_name)
@@ -138,7 +139,8 @@ def train_and_save_functional_lstm_model(tournament: str,
 def train_and_save_bidirectional_lstm_model(tournament: str,
                                             data: nx.data.Data,
                                             load_model: bool,
-                                            save_model: bool) -> nx.Model:
+                                            save_model: bool,
+                                            params: Dict = None) -> nx.Model:
     """Trains Bidirectional LSTM model and saves weights"""
 
     saved_model_name = f'bidirectional_lstm_prediction_model_{tournament}'
@@ -157,8 +159,8 @@ def train_and_save_bidirectional_lstm_model(tournament: str,
         model.fit(dfit=data['train'],
                   tournament=tournament,
                   eval_set=eval_set,
-                  epochs=1,
-                  batch_size=30)
+                  epochs=params['epochs'],
+                  batch_size=params['batch_size'])
     if save_model:
         LOGGER.info(f"Saving model for {tournament} locally")
         model.save(saved_model_name)
@@ -170,8 +172,8 @@ def train_and_save_bidirectional_lstm_model(tournament: str,
 
 def train_and_save_catboost_model(tournament: str,
                                   data: nx.data.Data,
-                                  load_model: bool = True,
-                                  save_model: bool = True,
+                                  load_model: bool,
+                                  save_model: bool,
                                   params: Dict = None) -> nx.Model:
     """Train and persist model weights"""
 
@@ -206,8 +208,8 @@ def train_and_save_catboost_model(tournament: str,
 
 def train_and_save_lightgbm_model(tournament: str,
                                   data: nx.data.Data,
-                                  load_model: bool = True,
-                                  save_model: bool = True,
+                                  load_model: bool,
+                                  save_model: bool,
                                   params: Dict = None) -> nx.Model:
     """Train and persist model weights"""
 
@@ -237,10 +239,9 @@ def train_and_save_lightgbm_model(tournament: str,
     return model
 
 
-def train_and_save_voting_regressor_model(tournament: str,
-                                          data: nx.data.Data,
-                                          load_model: bool = True,
-                                          save_model: bool = True) -> nx.Model:
+def train_and_save_voting_regressor_model(tournament: str, data: nx.data.Data,
+                                          load_model: bool,
+                                          save_model: bool) -> nx.Model:
     """Train and persist model weights"""
 
     saved_model_name = f'voting_regressor_prediction_model_{tournament}'
@@ -261,11 +262,10 @@ def train_and_save_voting_regressor_model(tournament: str,
     return model
 
 
-def train_and_save_stacking_regressor_model(
-        tournament: str,
-        data: nx.data.Data,
-        load_model: bool = True,
-        save_model: bool = True) -> nx.Model:
+def train_and_save_stacking_regressor_model(tournament: str,
+                                            data: nx.data.Data,
+                                            load_model: bool,
+                                            save_model: bool) -> nx.Model:
     """Train and persist model weights"""
 
     saved_model_name = f'stacking_regressor_prediction_model_{tournament}'

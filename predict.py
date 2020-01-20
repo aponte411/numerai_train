@@ -32,6 +32,12 @@ CATBOOST_PARAMS = {
     'iterations': 2000
 }
 
+LSTM_PARAMS = {'epochs': 1, 'batch_size': 120}
+
+FLSTM_PARAMS = {'epochs': 1, 'batch_size': 120}
+
+BILSTM_PARAMS = {'epochs': 1, 'batch_size': 120}
+
 
 def make_predictions_and_prepare_submission(
         model: nx.Model,
@@ -193,10 +199,41 @@ def train_and_predict_functional_lstm_model(
     LOGGER.info(f'Training and making predictions for {tournaments}')
     for tournament_name in tournaments:
         model: nx.Model = train.train_and_save_functional_lstm_model(
-            tournament=tournament_name, data=data)
+            tournament=tournament_name,
+            data=data,
+            load_model=False,
+            save_model=True,
+            params=FLSTM_PARAMS)
         predictions: nx.Prediction = make_predictions_and_prepare_submission(
             model=model,
             model_name='functional_lstm',
+            data=data,
+            tournament=tournament_name)
+        LOGGER.info(
+            predictions.summaries(data['validation'],
+                                  tournament=tournament_name))
+        LOGGER.info(predictions[:, tournament_name].metric_per_era(
+            data=data['validation'], tournament=tournament_name))
+
+    return predictions
+
+
+def train_and_predict_bidirectional_lstm_model(
+        submit_to_numerai: bool = None) -> nx.Prediction:
+    """Trains Bidirectional LSTM model and saves weights"""
+
+    tournaments, data = prepare_tournament_data()
+    LOGGER.info(f'Training and making predictions for {tournaments}')
+    for tournament_name in tournaments:
+        model: nx.Model = train.train_and_save_bidirectional_lstm_model(
+            tournament=tournament_name,
+            data=data,
+            load_model=False,
+            save_model=True,
+            params=BILSTM_PARAMS)
+        predictions: nx.Prediction = make_predictions_and_prepare_submission(
+            model=model,
+            model_name='bidirectional_lstm',
             data=data,
             tournament=tournament_name)
         LOGGER.info(
@@ -278,7 +315,9 @@ def main(model: str, submit) -> nx.Prediction:
     if model == 'lstm':
         return train_and_predict_lstm_model(submit)
     if model == 'flstm':
-        return train_and_predict_functional_lstm_model()
+        return train_and_predict_functional_lstm_model(submit)
+    if model == 'bilstm':
+        return train_and_predict_bidirectional_lstm_model(submit)
     if model == 'voting_regressor':
         return train_and_predict_voting_regressor_model(submit)
     if model == 'stacking_regressor':
