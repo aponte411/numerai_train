@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import pandas as pd
-from typing import Tuple, Any
+from typing import Tuple, Any, List
 import os
 import numerox as nx
 import boto3
@@ -21,17 +21,35 @@ def get_logger(name, level=logging.INFO) -> Any:
     return logger
 
 
-def prepare_tournament_data() -> Tuple:
-    """Downloads latest the tournament data from numerox"""
+LOGGER = get_logger(__name__)
 
-    tournaments: List[str] = nx.tournament_names()
+
+def get_tournament_data() -> nx.data.Data:
+    """Downloads latest the tournament data from numerox"""
     try:
         data: nx.data.Data = nx.download('numerai_dataset.zip')
     except Exception as e:
-        print(f'Failure to download numerai data with {e}')
+        LOGGER.info(f'Failure to download numerai data with {e}')
         raise e
 
-    return tournaments, data
+    return data
+
+
+def get_tournament_names() -> List[str]:
+    """Get latest tournament names"""
+
+    return nx.tournament_names()
+
+
+def evaluate_predictions(predictions: nx.Prediction, trainer: Any,
+                         tournament: str) -> None:
+    """Evaluate the validation set predictions"""
+
+    LOGGER.info(
+        predictions.summaries(trainer.data['validation'],
+                              tournament=tournament))
+    LOGGER.info(predictions[:, tournament].metric_per_era(
+        data=trainer.data['validation'], tournament=tournament))
 
 
 """
@@ -171,8 +189,10 @@ class S3Client:
 
         s3t = transfer.S3Transfer(self.client)
         s3t.upload_file(filename, self.bucket, key)
+        LOGGER.info('File successfully uploaded!')
 
     def download_file(self, filename: str, key: str) -> None:
 
         s3t = transfer.S3Transfer(self.client)
         s3t.download_file(self.bucket, key, filename)
+        LOGGER.info('File successfully downloaded!')

@@ -223,6 +223,8 @@ class LSTMModel(nx.Model):
                                  verbose=2,
                                  validation_data=eval_generator,
                                  callbacks=self.callbacks)
+        # only necessary for online/batch learning
+        self.model.reset_states()
 
     def predict(self, dpre: nx.data.Data, tournament: str) -> nx.Prediction:
         """
@@ -560,7 +562,7 @@ class BidirectionalLSTMModel(nx.Model):
         return joblib.load(filename)
 
 
-class LightGBMRegressorModel(nx.Model):
+class LightGBMModel(nx.Model):
     """LGBMRegressor Model"""
     def __init__(self,
                  n_estimators: int = 2019,
@@ -643,7 +645,7 @@ class LightGBMRegressorModel(nx.Model):
         return joblib.load(filename)
 
 
-class CatBoostRegressorModel(nx.Model):
+class CatBoostModel(nx.Model):
     """CatBoostRegressor Model"""
     def __init__(self,
                  depth: int = 8,
