@@ -29,7 +29,10 @@ voting_regressor_prediction_model_kazutsugi
 
 catboost_info
 
+# had to do this to hide keys
 *.polyaxon
+polyaxon_cpu.yaml
+polyaxon_gpu.yaml
 
 s3-key.json 
 
