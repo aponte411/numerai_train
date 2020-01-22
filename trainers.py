@@ -310,8 +310,7 @@ class VotingRegressorTrainer(Trainer):
 
     def load_from_s3(self, filename: str, key: str) -> None:
         self.model = models.VotingRegressorModel()
-        self.model.load_from_s3(filename=filename
-                                key=key)
+        self.model.load_from_s3(filename=filename, key=key)
         self.model = self.model.load(key)
         LOGGER.info(
             f"Trained model loaded from s3 bucket: {os.environ['BUCKET']}")
@@ -351,8 +350,7 @@ class StackingRegressorTrainer(Trainer):
 
     def load_from_s3(self, filename: str, key: str) -> None:
         self.model = models.StackingRegressorModel()
-        self.model.load_from_s3(filename=filename,
-                                key=key)
+        self.model.load_from_s3(filename=filename, key=key)
         self.model = self.model.load(key)
         LOGGER.info(
             f"Trained model loaded from s3 bucket: {os.environ['BUCKET']}")
