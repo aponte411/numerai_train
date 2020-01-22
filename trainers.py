@@ -157,11 +157,11 @@ class LightGBMTrainer(Trainer):
 
     def load_model_locally(self, key: str):
         LOGGER.info(f"Using saved model for {self.tournament}")
-        self.model = models.LightGBMRegressorModel()
+        self.model = models.LightGBMModel()
         self.model.load(key)
 
     def load_from_s3(self, filename: str, key: str):
-        self.model = models.LightGBMRegressorModel()
+        self.model = models.LightGBMModel()
         self.model.load_from_s3(filename=filename, key=key)
         self.model = self.model.load(key)
         LOGGER.info(
@@ -199,26 +199,27 @@ class CatBoostTrainer(Trainer):
         self.name = name
         self.model = None
 
-    def load_model_locally(self, key: str):
+    def load_model_locally(self, key: str) -> None:
         LOGGER.info(f"Using saved model for {self.tournament}")
         self.model = models.CatBoostModel()
         self.model.load(key)
 
-    def load_from_s3(self, filename: str, key: str):
+    def load_from_s3(self, filename: str, key: str) -> None:
         self.model = models.CatBoostModel()
         self.model.load_from_s3(filename=filename, key=key)
         self.model = self.model.load(key)
         LOGGER.info(
             f"Trained model loaded from s3 bucket: {os.environ['BUCKET']}")
 
-    def train_model(self, params: Dict):
+    def train_model(self, params: Dict) -> None:
         LOGGER.info(
             f"Building CatBoostModel from scratch for {self.tournament}")
         self.model = models.CatBoostModel(
             depth=params['depth'],
             learning_rate=params['learning_rate'],
             l2=params['l2'],
-            iterations=params['iterations'])
+            iterations=params['iterations'],
+            task_type=params['task_type'])
         LOGGER.info(f"Training CatBoostModel for {self.tournament}")
         eval_set = [(self.data['validation'].x,
                      self.data['validation'].y[self.tournament])]
@@ -226,7 +227,7 @@ class CatBoostTrainer(Trainer):
                        tournament=self.tournament,
                        eval_set=eval_set)
 
-    def save_model_locally(self, key: str):
+    def save_model_locally(self, key: str) -> None:
         LOGGER.info(f"Saving model for {self.tournament} locally")
         self.model.save(key)
 

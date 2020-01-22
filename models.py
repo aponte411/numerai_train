@@ -665,13 +665,15 @@ class CatBoostModel(nx.Model):
                  depth: int = 8,
                  learning_rate: float = 0.01234,
                  l2: float = 0.01,
-                 iterations: int = 2019):
+                 iterations: int = 2019,
+                 task_type: str = 'CPU'):
         self.params = None
         self.model = CatBoostRegressor(loss_function='RMSE',
                                        depth=depth,
                                        learning_rate=learning_rate,
                                        l2_leaf_reg=l2,
                                        iterations=iterations,
+                                       task_type=task_type,
                                        random_seed=511,
                                        od_type='Iter',
                                        od_wait=20)

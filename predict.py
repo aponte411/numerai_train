@@ -303,10 +303,11 @@ def main(model: str, load_model: bool, save_model: bool,
                                                 params=LIGHTGBM_PARAMS)
     if model == 'catboost':
         CATBOOST_PARAMS = {
-            'depth': 5,
-            'learning_rate': 0.001,
-            'l2': 0.01,
-            'iterations': 2000
+            'depth': 7,
+            'learning_rate': 0.0123,
+            'l2': 0.1,
+            'iterations': 2000,
+            'task_type': 'GPU'
         }
         return train_and_predict_catboost_model(load_model=load_model,
                                                 save_model=save_model,
