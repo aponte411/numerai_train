@@ -587,7 +587,8 @@ class LightGBMModel(nx.Model):
                                    reg_lambda=reg_lambda,
                                    silent=False,
                                    random_state=511,
-                                   early_stopping_rounds=25)
+                                   early_stopping_rounds=25,
+                                   n_jobs=-1)
 
     def fit(self,
             dfit: nx.data.Data,
@@ -598,7 +599,6 @@ class LightGBMModel(nx.Model):
         self.model.fit(X=dfit.x,
                        y=dfit.y[tournament],
                        eval_set=eval_set,
-                       n_jobs=-1,
                        early_stopping_rounds=50)
 
     def predict(self, dpre: nx.data.Data, tournament: str) -> nx.Prediction:
