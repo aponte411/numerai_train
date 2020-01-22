@@ -284,10 +284,10 @@ def main(model: str, load_model: bool, save_model: bool,
 
     if model == 'xgboost':
         XGBOOST_PARAMS = {
-            "max_depth": 7,
-            "learning_rate": 0.00123,
-            "l2": 0.015,
-            "n_estimators": 2,
+            "max_depth": 6,
+            "learning_rate": 0.000123,
+            "l2": 0.2,
+            "n_estimators": 3000,
             "tree_method": "auto"
         }
         return train_and_predict_xgboost_model(load_model=load_model,
