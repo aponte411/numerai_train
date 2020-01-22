@@ -35,7 +35,8 @@ def train_and_predict_xgboost_model(load_model: bool, save_model: bool,
             trainer.train_model(params=params)
             if save_model:
                 trainer.save_model_locally(key=saved_model_name)
-                trainer.save_to_s3(saved_model_name)
+                trainer.save_to_s3(filename=saved_model_name,
+                                   key=saved_model_name)
             predictions = trainer.make_predictions_and_prepare_submission(
                 tournament=tournament_name, submit=submit_to_numerai)
             utils.evaluate_predictions(predictions=predictions,
