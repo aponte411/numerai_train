@@ -237,11 +237,12 @@ class CatBoostTrainer(Trainer):
 
 class LSTMTrainer(Trainer):
     """Trains, serializes, loads, and conducts inference"""
-    def __init__(self, data=None, tournament=None, name='lstm'):
+    def __init__(self, data=None, tournament=None, name='lstm', gpu=None):
         super().__init__(data=data, tournament=tournament, name=name)
         self.data = data
         self.tournament = tournament
         self.name = name
+        self.gpu = gpu
         self.model = None
 
     def load_model_locally(self, saved_model_name: str):
@@ -262,7 +263,10 @@ class LSTMTrainer(Trainer):
     def train_model(self, params: Dict):
 
         LOGGER.info(f"Building LSTMModel from scratch for {self.tournament}")
-        self.model = models.LSTMModel(time_steps=params['time_steps'], gpu=2)
+        if self.gpu is not None:
+            LOGGER.info(f"Building model with {self.gpu} GPU's")
+        self.model = models.LSTMModel(time_steps=params['time_steps'],
+                                      gpu=self.gpu)
         LOGGER.info(f"Training LSTM model for {self.tournament}")
         eval_set = (self.data['validation'].x,
                     self.data['validation'].y[self.tournament])
@@ -274,10 +278,12 @@ class LSTMTrainer(Trainer):
                            batch_size=params['batch_size'])
 
     def save_model_locally(self, saved_model_name: str):
+
         LOGGER.info(f"Saving model for {self.tournament} locally")
         self.model.save(saved_model_name)
 
     def save_to_s3(self, saved_model_name: str):
+
         LOGGER.info(f"Saving {self.name} for {self.tournament} to s3 bucket")
         self.model.save_to_s3(filename=saved_model_name, key=saved_model_name)
 

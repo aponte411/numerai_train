@@ -113,7 +113,9 @@ def train_and_predict_lstm_model(load_model: bool, save_model: bool,
     data = utils.get_tournament_data()
     for tournament_name in tournaments:
         saved_model_name = f'lstm_prediction_model_{tournament_name}'
-        trainer = trainers.LSTMTrainer(data=data, tournament=tournament_name)
+        trainer = trainers.LSTMTrainer(data=data,
+                                       tournament=tournament_name,
+                                       gpu=2)
         if load_model:
             trainer.load_from_s3(saved_model_name)
             predictions = trainer.make_predictions_and_prepare_submission(
