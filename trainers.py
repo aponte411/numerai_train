@@ -245,23 +245,19 @@ class LSTMTrainer(Trainer):
         self.gpu = gpu
         self.model = None
 
-    def load_model_locally(self, saved_model_name: str):
-
+    def load_model_locally(self, key: str) -> None:
         LOGGER.info(f"Using saved model for {self.tournament}")
         self.model = models.LSTMModel()
-        self.model.load(saved_model_name)
+        self.model.load(key)
 
-    def load_from_s3(self, saved_model_name: str):
-
+    def load_from_s3(self, filename: str, key: str) -> None:
         self.model = models.LSTMModel()
-        self.model.load_from_s3(filename=saved_model_name,
-                                key=saved_model_name)
-        self.model = self.model.load(saved_model_name)
+        self.model.load_from_s3(filename=filename, key=key)
+        self.model = self.model.load(key)
         LOGGER.info(
             f"Trained model loaded from s3 bucket: {os.environ['BUCKET']}")
 
-    def train_model(self, params: Dict):
-
+    def train_model(self, params: Dict) -> None:
         LOGGER.info(f"Building LSTMModel from scratch for {self.tournament}")
         if self.gpu is not None:
             LOGGER.info(f"Building model with {self.gpu} GPU's")
@@ -277,15 +273,13 @@ class LSTMTrainer(Trainer):
                            epochs=1,
                            batch_size=params['batch_size'])
 
-    def save_model_locally(self, saved_model_name: str):
-
+    def save_model_locally(self, key: str) -> None:
         LOGGER.info(f"Saving model for {self.tournament} locally")
-        self.model.save(saved_model_name)
+        self.model.save(key)
 
-    def save_to_s3(self, saved_model_name: str):
-
+    def save_to_s3(self, filename: str, key: str) -> None:
         LOGGER.info(f"Saving {self.name} for {self.tournament} to s3 bucket")
-        self.model.save_to_s3(filename=saved_model_name, key=saved_model_name)
+        self.model.save_to_s3(filename=filename, key=key)
 
 
 class FunctionalLSTMTrainer(Trainer):

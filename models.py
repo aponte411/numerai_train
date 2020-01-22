@@ -196,7 +196,7 @@ class LSTMModel(nx.Model):
         tensorboard_callback = TensorBoard(log_dir=logdir)
         self.callbacks = [early_stop, model_checkpoint, tensorboard_callback]
 
-        if self.gpu is not None:
+        if self.gpu >= 2:
             try:
                 model = multi_gpu_model(model, gpus=self.gpu, cpu_relocation=True)
                 LOGGER.info(f"Training model with {self.gpu} gpus")

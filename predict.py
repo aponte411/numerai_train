@@ -121,13 +121,13 @@ def train_and_predict_lstm_model(load_model: bool, save_model: bool,
     tournaments = utils.get_tournament_names()
     data = utils.get_tournament_data()
     for tournament_name in tournaments:
-        filename = f'/tmp/lstm_prediction_model_{tournament_name}'
         saved_model_name = f'lstm_prediction_model_{tournament_name}'
         trainer = trainers.LSTMTrainer(data=data,
                                        tournament=tournament_name,
                                        gpu=1)
         if load_model:
-            trainer.load_from_s3(filename=filename, key=saved_model_name)
+            trainer.load_from_s3(filename=saved_model_name,
+                                 key=saved_model_name)
             predictions = trainer.make_predictions_and_prepare_submission(
                 tournament=tournament_name, submit=submit_to_numerai)
             utils.evaluate_predictions(predictions=predictions,
@@ -137,7 +137,9 @@ def train_and_predict_lstm_model(load_model: bool, save_model: bool,
         else:
             trainer.train_model(params=params)
             if save_model:
-                trainer.save_to_s3(filename=filename, key=saved_model_name)
+                trainer.save_model_locally(key=saved_model_name)
+                trainer.save_to_s3(filename=saved_model_name,
+                                   key=saved_model_name)
             predictions = trainer.make_predictions_and_prepare_submission(
                 tournament=tournament_name, submit=submit_to_numerai)
             utils.evaluate_predictions(predictions=predictions,
@@ -322,7 +324,7 @@ def main(model: str, load_model: bool, save_model: bool,
                                                 submit_to_numerai=submit,
                                                 params=CATBOOST_PARAMS)
     if model == 'lstm':
-        LSTM_PARAMS = {'epochs': 1, 'batch_size': 1, 'time_steps': 1}
+        LSTM_PARAMS = {'epochs': 300, 'batch_size': 1, 'time_steps': 1}
         return train_and_predict_lstm_model(load_model=load_model,
                                             save_model=save_model,
                                             submit_to_numerai=submit,
