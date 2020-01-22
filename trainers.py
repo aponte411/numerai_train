@@ -162,9 +162,8 @@ class LightGBMTrainer(Trainer):
 
     def load_from_s3(self, filename: str, key: str):
         self.model = models.LightGBMRegressorModel()
-        self.model.load_from_s3(filename=filename,
-                                key=key)
-        self.model = self.model.load(key))
+        self.model.load_from_s3(filename=filename, key=key)
+        self.model = self.model.load(key)
         LOGGER.info(
             f"Trained model loaded from s3 bucket: {os.environ['BUCKET']}")
 
@@ -207,8 +206,7 @@ class CatBoostTrainer(Trainer):
 
     def load_from_s3(self, filename: str, key: str):
         self.model = models.CatBoostModel()
-        self.model.load_from_s3(filename=filename,
-                                key=key)
+        self.model.load_from_s3(filename=filename, key=key)
         self.model = self.model.load(key)
         LOGGER.info(
             f"Trained model loaded from s3 bucket: {os.environ['BUCKET']}")
