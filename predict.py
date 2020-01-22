@@ -278,9 +278,9 @@ def main(model: str, load_model: bool, save_model: bool,
 
     if model == 'xgboost':
         XGBOOST_PARAMS = {
-            "max_depth": 5,
+            "max_depth": 7,
             "learning_rate": 0.00123,
-            "l2": 0.02,
+            "l2": 0.015,
             "n_estimators": 2511
         }
         return train_and_predict_xgboost_model(load_model=load_model,
@@ -309,7 +309,7 @@ def main(model: str, load_model: bool, save_model: bool,
                                                 submit_to_numerai=submit,
                                                 params=CATBOOST_PARAMS)
     if model == 'lstm':
-        LSTM_PARAMS = {'epochs': 1, 'batch_size': 1, 'timesteps': 1}
+        LSTM_PARAMS = {'epochs': 1, 'batch_size': 1, 'time_steps': 1}
         return train_and_predict_lstm_model(load_model=load_model,
                                             save_model=save_model,
                                             submit_to_numerai=submit,

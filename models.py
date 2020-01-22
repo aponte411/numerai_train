@@ -12,8 +12,10 @@ from xgboost import XGBRegressor
 import xgboost as xgb
 from catboost import CatBoostRegressor
 from lightgbm import LGBMRegressor
+import tensorflow as tf
 from keras import layers, Sequential
 from keras import metrics
+from keras.utils import multi_gpu_model
 from keras.callbacks import (EarlyStopping, ModelCheckpoint, TensorBoard)
 from keras.preprocessing.sequence import TimeseriesGenerator
 from keras_functional_lstm import LstmModel
@@ -150,9 +152,10 @@ class LSTMModel(nx.Model):
 
     Reference: numerox/numerox/examples/model.rst
     """
-    def __init__(self, time_steps: int = 1):
+    def __init__(self, time_steps: int = 1, gpu=None):
         self.params: Any = None
         self.time_steps: int = time_steps
+        self.gpu = gpu
         self.model: Sequential = self._lstm_model()
         self.callbacks: List = None
 
@@ -190,6 +193,14 @@ class LSTMModel(nx.Model):
         logdir = f'LSTM_logs/scalars/{datetime.now().strftime("%Y%m%d-%H%M%S")}'
         tensorboard_callback = TensorBoard(log_dir=logdir)
         self.callbacks = [early_stop, model_checkpoint, tensorboard_callback]
+
+        if self.gpu is not None:
+            try:
+                model = multi_gpu_model(model, gpus=self.gpu, cpu_relocation=True)
+                LOGGER.info(f"Training model with {self.gpu} gpus")
+            except Exception as e:
+                LOGGER.info(f"Failed to train model with GPUS due to {e}, reverting to CPU")
+                raise e
 
         model.compile(loss='mean_squared_error',
                       optimizer='adam',

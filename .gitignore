@@ -37,3 +37,5 @@ polyaxon_gpu.yaml
 s3-key.json 
 
 .DS_Store
+
+.env

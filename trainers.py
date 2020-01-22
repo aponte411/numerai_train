@@ -245,11 +245,13 @@ class LSTMTrainer(Trainer):
         self.model = None
 
     def load_model_locally(self, saved_model_name: str):
+
         LOGGER.info(f"Using saved model for {self.tournament}")
         self.model = models.LSTMModel()
         self.model.load(saved_model_name)
 
     def load_from_s3(self, saved_model_name: str):
+
         self.model = models.LSTMModel()
         self.model.load_from_s3(filename=saved_model_name,
                                 key=saved_model_name)
@@ -258,13 +260,14 @@ class LSTMTrainer(Trainer):
             f"Trained model loaded from s3 bucket: {os.environ['BUCKET']}")
 
     def train_model(self, params: Dict):
+
         LOGGER.info(f"Building LSTMModel from scratch for {self.tournament}")
-        self.model = models.LSTMModel(timesteps=params['timesteps'])
+        self.model = models.LSTMModel(time_steps=params['time_steps'], gpu=2)
         LOGGER.info(f"Training LSTM model for {self.tournament}")
         eval_set = (self.data['validation'].x,
                     self.data['validation'].y[self.tournament])
         for i in range(params['epochs']):
-            self.model.fit(dfit=data['train'],
+            self.model.fit(dfit=self.data['train'],
                            tournament=self.tournament,
                            eval_set=eval_set,
                            epochs=1,
