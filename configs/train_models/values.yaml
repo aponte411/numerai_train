@@ -1,6 +1,7 @@
 env:
     NUMERAI_PUBLIC_ID:
     NUMERAI_SECRET_KEY:
+    BUCKET:
 
 replicaCount: 1
 
@@ -11,7 +12,7 @@ mainContainer:
 postProcess:
   run: False
 
-imageSecret: registry-secret
+imageSecret: numerai-secret-key
 
 job:
   annotations:
@@ -36,8 +37,8 @@ resources:
     limits:
       cpu:
         requests: 4
-        limits: 1
+        limits: 15
       gpu:
         requests: 2
-        limits: 1
+        limits: 2
 
