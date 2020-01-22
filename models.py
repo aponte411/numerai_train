@@ -61,13 +61,15 @@ class XGBoostModel(nx.Model):
                  learning_rate: float = 0.001777765,
                  l2: float = 0.1111119,
                  n_estimators: int = 2019,
-                 colsample_bytree: float = 0.019087):
+                 colsample_bytree: float = 0.019087,
+                 tree_method: str = 'auto'):
         self.params = None
         self.model = XGBRegressor(max_depth=max_depth,
                                   learning_rate=learning_rate,
                                   reg_lambda=l2,
                                   n_estimators=n_estimators,
                                   n_jobs=-1,
+                                  tree_method=tree_method,
                                   colsample_bytree=colsample_bytree,
                                   verbosity=3)
 

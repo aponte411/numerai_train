@@ -108,26 +108,28 @@ class XGBoostTrainer(Trainer):
         self.name = name
         self.model = None
 
-    def load_model_locally(self, saved_model_name: str):
+    def load_model_locally(self, key: str):
         LOGGER.info(f"Using saved model for {self.tournament}")
         self.model = models.XGBoostModel()
-        self.model.load(saved_model_name)
+        self.model.load(key)
 
-    def load_from_s3(self, saved_model_name: str):
+    def load_from_s3(self, filename: str, key: str):
         self.model = models.XGBoostModel()
-        self.model.load_from_s3(filename=saved_model_name,
-                                key=saved_model_name)
-        self.model = self.model.load(saved_model_name)
+        self.model.load_from_s3(filename=filename, key=key)
+        self.model = self.model.load(key)
         LOGGER.info(
             f"Trained model loaded from s3 bucket: {os.environ['BUCKET']}")
 
     def train_model(self, params: Dict):
         LOGGER.info(
             f"Building XGBoostModel from scratch for {self.tournament}")
+        if params["tree_method"] == 'gpu_hist':
+            LOGGER.info(f"Training XGBoost with GPU's")
         self.model = models.XGBoostModel(max_depth=params["max_depth"],
                                          learning_rate=params["learning_rate"],
                                          l2=params["l2"],
-                                         n_estimators=params["n_estimators"])
+                                         n_estimators=params["n_estimators"],
+                                         tree_method=params["tree_method"])
         LOGGER.info(f"Training XGBoost model for {self.tournament}")
         eval_set = [(self.data['validation'].x,
                      self.data['validation'].y[self.tournament])]
@@ -135,13 +137,13 @@ class XGBoostTrainer(Trainer):
                        tournament=self.tournament,
                        eval_set=eval_set)
 
-    def save_model_locally(self, saved_model_name: str):
+    def save_model_locally(self, key: str):
         LOGGER.info(f"Saving model for {self.tournament} locally")
-        self.model.save(saved_model_name)
+        self.model.save(key)
 
-    def save_to_s3(self, saved_model_name: str):
+    def save_to_s3(self, filename: str, key: str):
         LOGGER.info(f"Saving {self.name} for {self.tournament} to s3 bucket")
-        self.model.save_to_s3(filename=saved_model_name, key=saved_model_name)
+        self.model.save_to_s3(filename=filename, key=key)
 
 
 class LightGBMTrainer(Trainer):

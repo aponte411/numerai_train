@@ -23,7 +23,8 @@ def train_and_predict_xgboost_model(load_model: bool, save_model: bool,
         trainer = trainers.XGBoostTrainer(data=data,
                                           tournament=tournament_name)
         if load_model:
-            trainer.load_from_s3(saved_model_name)
+            trainer.load_from_s3(filename=saved_model_name,
+                                 key=saved_model_name)
             predictions = trainer.make_predictions_and_prepare_submission(
                 tournament=tournament_name, submit=submit_to_numerai)
             utils.evaluate_predictions(predictions=predictions,
@@ -33,6 +34,7 @@ def train_and_predict_xgboost_model(load_model: bool, save_model: bool,
         else:
             trainer.train_model(params=params)
             if save_model:
+                trainer.save_model_locally(key=saved_model_name)
                 trainer.save_to_s3(saved_model_name)
             predictions = trainer.make_predictions_and_prepare_submission(
                 tournament=tournament_name, submit=submit_to_numerai)
@@ -112,12 +114,13 @@ def train_and_predict_lstm_model(load_model: bool, save_model: bool,
     tournaments = utils.get_tournament_names()
     data = utils.get_tournament_data()
     for tournament_name in tournaments:
+        filename = f'/tmp/lstm_prediction_model_{tournament_name}'
         saved_model_name = f'lstm_prediction_model_{tournament_name}'
         trainer = trainers.LSTMTrainer(data=data,
                                        tournament=tournament_name,
-                                       gpu=2)
+                                       gpu=1)
         if load_model:
-            trainer.load_from_s3(saved_model_name)
+            trainer.load_from_s3(filename=filename, key=saved_model_name)
             predictions = trainer.make_predictions_and_prepare_submission(
                 tournament=tournament_name, submit=submit_to_numerai)
             utils.evaluate_predictions(predictions=predictions,
@@ -127,7 +130,7 @@ def train_and_predict_lstm_model(load_model: bool, save_model: bool,
         else:
             trainer.train_model(params=params)
             if save_model:
-                trainer.save_to_s3(saved_model_name)
+                trainer.save_to_s3(filename=filename, key=saved_model_name)
             predictions = trainer.make_predictions_and_prepare_submission(
                 tournament=tournament_name, submit=submit_to_numerai)
             utils.evaluate_predictions(predictions=predictions,
@@ -283,7 +286,8 @@ def main(model: str, load_model: bool, save_model: bool,
             "max_depth": 7,
             "learning_rate": 0.00123,
             "l2": 0.015,
-            "n_estimators": 2511
+            "n_estimators": 2,
+            "tree_method": "auto"
         }
         return train_and_predict_xgboost_model(load_model=load_model,
                                                save_model=save_model,
