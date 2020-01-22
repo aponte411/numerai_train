@@ -324,10 +324,16 @@ def main(model: str, load_model: bool, save_model: bool,
     # if model == 'bilstm':
     #     BILSTM_PARAMS = {'epochs': 1, 'batch_size': 120}
     #     return train_and_predict_bidirectional_lstm_model(submit)
-    # if model == 'voting_regressor':
-    #     return train_and_predict_voting_regressor_model(submit)
-    # if model == 'stacking_regressor':
-    #     return train_and_predict_stacking_regressor_model(submit)
+    if model == 'voting_regressor':
+        return train_and_predict_voting_regressor_model(
+            load_model=load_model,
+            save_model=save_model,
+            submit_to_numerai=submit)
+    if model == 'stacking_regressor':
+        return train_and_predict_stacking_regressor_model(
+            load_model=load_model,
+            save_model=save_model,
+            submit_to_numerai=submit)
 
 
 if __name__ == "__main__":
