@@ -303,20 +303,20 @@ class VotingRegressorTrainer(Trainer):
         self.name = name
         self.model = None
 
-    def load_model_locally(self, saved_model_name: str):
+    def load_model_locally(self, key: str) -> None:
         LOGGER.info(f"Using saved model for {self.tournament}")
         self.model = models.VotingRegressorModel()
-        self.model.load(saved_model_name)
+        self.model.load(key)
 
-    def load_from_s3(self, saved_model_name: str):
+    def load_from_s3(self, filename: str, key: str) -> None:
         self.model = models.VotingRegressorModel()
-        self.model.load_from_s3(filename=saved_model_name,
-                                key=saved_model_name)
-        self.model = self.model.load(saved_model_name)
+        self.model.load_from_s3(filename=filename
+                                key=key)
+        self.model = self.model.load(key)
         LOGGER.info(
             f"Trained model loaded from s3 bucket: {os.environ['BUCKET']}")
 
-    def train_model(self, params: Dict):
+    def train_model(self, params: Dict) -> None:
         LOGGER.info(
             f"Building VotingRegressorModel from scratch for {self.tournament}"
         )
@@ -326,13 +326,13 @@ class VotingRegressorTrainer(Trainer):
                        tournament=self.tournament,
                        eval_set=eval_set)
 
-    def save_model_locally(self, saved_model_name: str):
+    def save_model_locally(self, key: str):
         LOGGER.info(f"Saving model for {self.tournament} locally")
-        self.model.save(saved_model_name)
+        self.model.save(key)
 
-    def save_to_s3(self, saved_model_name: str):
+    def save_to_s3(self, filename: str, key: str) -> None:
         LOGGER.info(f"Saving {self.name} for {self.tournament} to s3 bucket")
-        self.model.save_to_s3(filename=saved_model_name, key=saved_model_name)
+        self.model.save_to_s3(filename=filename, key=key)
 
 
 class StackingRegressorTrainer(Trainer):
@@ -344,20 +344,20 @@ class StackingRegressorTrainer(Trainer):
         self.name = name
         self.model = None
 
-    def load_model_locally(self, saved_model_name: str):
+    def load_model_locally(self, key: str) -> None:
         LOGGER.info(f"Using saved model for {self.tournament}")
         self.model = models.StackingRegressorModel()
-        self.model.load(saved_model_name)
+        self.model.load(key)
 
-    def load_from_s3(self, saved_model_name: str):
+    def load_from_s3(self, filename: str, key: str) -> None:
         self.model = models.StackingRegressorModel()
-        self.model.load_from_s3(filename=saved_model_name,
-                                key=saved_model_name)
-        self.model = self.model.load(saved_model_name)
+        self.model.load_from_s3(filename=filename,
+                                key=key)
+        self.model = self.model.load(key)
         LOGGER.info(
             f"Trained model loaded from s3 bucket: {os.environ['BUCKET']}")
 
-    def train_model(self, params: Dict):
+    def train_model(self, params: Dict) -> None:
         LOGGER.info(
             f"Building StackingRegressorModel from scratch for {self.tournament}"
         )
@@ -367,13 +367,13 @@ class StackingRegressorTrainer(Trainer):
                        tournament=self.tournament,
                        eval_set=eval_set)
 
-    def save_model_locally(self, saved_model_name: str):
+    def save_model_locally(self, key: str) -> None:
         LOGGER.info(f"Saving model for {self.tournament} locally")
-        self.model.save(saved_model_name)
+        self.model.save(key)
 
-    def save_to_s3(self, saved_model_name: str):
+    def save_to_s3(self, filename: str, key: str):
         LOGGER.info(f"Saving {self.name} for {self.tournament} to s3 bucket")
-        self.model.save_to_s3(filename=saved_model_name, key=saved_model_name)
+        self.model.save_to_s3(filename=filename, key=key)
 
 
 def train_and_save_functional_lstm_model(tournament: str,
