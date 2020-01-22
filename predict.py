@@ -57,7 +57,8 @@ def train_and_predict_lightgbm_model(load_model: bool, save_model: bool,
         trainer = trainers.LightGBMTrainer(data=data,
                                            tournament=tournament_name)
         if load_model:
-            trainer.load_from_s3(saved_model_name)
+            trainer.load_from_s3(filename=saved_model_name,
+                                 key=saved_model_name)
             predictions = trainer.make_predictions_and_prepare_submission(
                 tournament=tournament_name, submit=submit_to_numerai)
             utils.evaluate_predictions(predictions=predictions,
@@ -67,7 +68,9 @@ def train_and_predict_lightgbm_model(load_model: bool, save_model: bool,
         else:
             trainer.train_model(params=params)
             if save_model:
-                trainer.save_to_s3(saved_model_name)
+                trainer.save_model_locally(key=saved_model_name)
+                trainer.save_to_s3(filename=saved_model_name,
+                                   key=saved_model_name)
             predictions = trainer.make_predictions_and_prepare_submission(
                 tournament=tournament_name, submit=submit_to_numerai)
             utils.evaluate_predictions(predictions=predictions,
@@ -88,7 +91,8 @@ def train_and_predict_catboost_model(load_model: bool, save_model: bool,
         trainer = trainers.CatBoostTrainer(data=data,
                                            tournament=tournament_name)
         if load_model:
-            trainer.load_from_s3(saved_model_name)
+            trainer.load_from_s3(filename=saved_model_name,
+                                 key=saved_model_name)
             predictions = trainer.make_predictions_and_prepare_submission(
                 tournament=tournament_name, submit=submit_to_numerai)
             utils.evaluate_predictions(predictions=predictions,
@@ -98,7 +102,9 @@ def train_and_predict_catboost_model(load_model: bool, save_model: bool,
         else:
             trainer.train_model(params=params)
             if save_model:
-                trainer.save_to_s3(saved_model_name)
+                trainer.save_model_locally(key=saved_model_name)
+                trainer.save_to_s3(filename=saved_model_name,
+                                   key=saved_model_name)
             predictions = trainer.make_predictions_and_prepare_submission(
                 tournament=tournament_name, submit=submit_to_numerai)
             utils.evaluate_predictions(predictions=predictions,
@@ -297,8 +303,8 @@ def main(model: str, load_model: bool, save_model: bool,
     if model == 'lightgbm':
         LIGHTGBM_PARAMS = {
             "n_estimators": 1234,
-            "learning_rate": 0.00111325,
-            "reg_lambda": 0.0111561
+            "learning_rate": 0.01,
+            "reg_lambda": 0.1
         }
         return train_and_predict_lightgbm_model(load_model=load_model,
                                                 save_model=save_model,
