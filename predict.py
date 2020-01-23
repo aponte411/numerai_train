@@ -344,11 +344,10 @@ def main(model: str, load_model: bool, save_model: bool,
                                                 params=FLSTM_PARAMS)
     if model == 'bilstm':
         BILSTM_PARAMS = {'epochs': 1, 'batch_size': 120}
-        return train_and_predict_bidirectional_lstm_model(
-            load_model=load_model,
-            save_model=save_model,
-            submit_to_numerai=submit,
-            params=BILSTM_PARAMS)
+        return train_and_predict_bilstm_model(load_model=load_model,
+                                              save_model=save_model,
+                                              submit_to_numerai=submit,
+                                              params=BILSTM_PARAMS)
     if model == 'voting_regressor':
         return train_and_predict_voting_regressor_model(
             load_model=load_model,
