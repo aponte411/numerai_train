@@ -32,27 +32,38 @@ class LinearModel(nx.Model):
         self.params = None
         self.model = LinearRegression()
 
-    def fit(self, dfit, tournament):
+    def fit(self, dfit, tournament) -> None:
         self.model.fit(dfit.x, dfit.y[tournament])
 
-    def fit_predict(self, dfit, dpre, tournament):
+    def fit_predict(self, dfit, dpre, tournament) -> Tuple:
         # fit is done separately in `.fit()`
 
         yhat = self.model.predict(dpre.x)
 
         return dpre.ids, yhat
 
-    def save(self, filename) -> None:
+    def save_to_s3(self, filename: str, key: str) -> None:
+        """Save model to s3 bucket"""
+
+        s3 = S3Client()
+        s3.upload_file(filename=filename, key=key)
+
+    def load_from_s3(self, filename: str, key: str) -> None:
+        """Download model from s3 bucket"""
+
+        s3 = S3Client()
+        s3.download_file(filename=filename, key=key)
+
+    def save(self, filename):
         """Serialize model"""
 
         joblib.dump(self, filename)
 
     @classmethod
-    def load(cls, filename) -> Any:
+    def load(cls, filename):
         """Load trained model"""
 
         return joblib.load(filename)
-
 
 class XGBoostModel(nx.Model):
     """XGBoost Regressor"""
@@ -313,9 +324,10 @@ class LSTMModel(nx.Model):
 
 class FunctionalLSTMModel(nx.Model):
     """Functional implementation of Keras LSTM Model"""
-    def __init__(self, time_steps: int = 1):
+    def __init__(self, time_steps: int = 1, gpu: int = None):
         self.params = None
         self.time_steps = time_steps
+        self.gpu = gpu
         self.model = self._functional_lstm_model()
         self.callbacks = None
 
@@ -333,9 +345,17 @@ class FunctionalLSTMModel(nx.Model):
         tensorboard_callback = TensorBoard(log_dir=logdir)
         self.callbacks = [early_stop, model_checkpoint, tensorboard_callback]
 
+        if self.gpu >= 2:
+            try:
+                model = multi_gpu_model(model, gpus=self.gpu, cpu_relocation=True)
+                LOGGER.info(f"Training model with {self.gpu} gpus")
+            except Exception as e:
+                LOGGER.info(f"Failed to train model with GPUS due to {e}, reverting to CPU")
+                raise e
+
         model.compile(loss='mean_squared_error',
                       optimizer='adam',
-                      metrics=['accuracy'])
+                      metrics=[metrics.mae, correlation_coefficient_loss])
 
         return model
 
@@ -432,11 +452,12 @@ class FunctionalLSTMModel(nx.Model):
 
 class BidirectionalLSTMModel(nx.Model):
     """Keras Bidirectional LSTM model"""
-    def __init__(self, time_steps: int = 1):
+    def __init__(self, time_steps: int = 1, gpu: int = None):
         self.params = None
-        self.time_steps: int = time_steps
+        self.time_steps = time_steps
+        self.gpu = gpu
         self.model: Sequential = self._bidirectional_lstm_model()
-        self.callbacks: List = None
+        self.callbacks = None
 
     def _bidirectional_lstm_model(self) -> Sequential:
         """Returns Bidirectional LSTM model"""
@@ -478,9 +499,17 @@ class BidirectionalLSTMModel(nx.Model):
         tensorboard_callback = TensorBoard(log_dir=logdir)
         self.callbacks = [early_stop, model_checkpoint, tensorboard_callback]
 
+        if self.gpu >= 2:
+            try:
+                model = multi_gpu_model(model, gpus=self.gpu, cpu_relocation=True)
+                LOGGER.info(f"Training model with {self.gpu} gpus")
+            except Exception as e:
+                LOGGER.info(f"Failed to train model with GPUS due to {e}, reverting to CPU")
+                raise e
+
         model.compile(loss='mean_squared_error',
                       optimizer='adam',
-                      metrics=['accuracy'])
+                      metrics=[metrics.mae, correlation_coefficient_loss])
 
         return model
 

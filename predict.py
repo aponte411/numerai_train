@@ -148,6 +148,76 @@ def train_and_predict_lstm_model(load_model: bool, save_model: bool,
             return predictions
 
 
+def train_and_predict_funclstm_model(load_model: bool, save_model: bool,
+                                     submit_to_numerai: bool,
+                                     params: Dict) -> None:
+    """Train/load model and conduct inference"""
+
+    tournaments = utils.get_tournament_names()
+    data = utils.get_tournament_data()
+    for tournament_name in tournaments:
+        saved_model_name = f'funclstm_prediction_model_{tournament_name}'
+        trainer = trainers.FunctionalLSTMTrainer(data=data,
+                                                 tournament=tournament_name,
+                                                 gpu=1)
+        if load_model:
+            trainer.load_from_s3(filename=saved_model_name,
+                                 key=saved_model_name)
+            predictions = trainer.make_predictions_and_prepare_submission(
+                tournament=tournament_name, submit=submit_to_numerai)
+            utils.evaluate_predictions(predictions=predictions,
+                                       trainer=trainer,
+                                       tournament=tournament_name)
+            return predictions
+        else:
+            trainer.train_model(params=params)
+            if save_model:
+                trainer.save_model_locally(key=saved_model_name)
+                trainer.save_to_s3(filename=saved_model_name,
+                                   key=saved_model_name)
+            predictions = trainer.make_predictions_and_prepare_submission(
+                tournament=tournament_name, submit=submit_to_numerai)
+            utils.evaluate_predictions(predictions=predictions,
+                                       trainer=trainer,
+                                       tournament=tournament_name)
+            return predictions
+
+
+def train_and_predict_bilstm_model(load_model: bool, save_model: bool,
+                                   submit_to_numerai: bool,
+                                   params: Dict) -> None:
+    """Train/load model and conduct inference"""
+
+    tournaments = utils.get_tournament_names()
+    data = utils.get_tournament_data()
+    for tournament_name in tournaments:
+        saved_model_name = f'bilstm_prediction_model_{tournament_name}'
+        trainer = trainers.BidirectionalLSTMTrainer(data=data,
+                                                    tournament=tournament_name,
+                                                    gpu=1)
+        if load_model:
+            trainer.load_from_s3(filename=saved_model_name,
+                                 key=saved_model_name)
+            predictions = trainer.make_predictions_and_prepare_submission(
+                tournament=tournament_name, submit=submit_to_numerai)
+            utils.evaluate_predictions(predictions=predictions,
+                                       trainer=trainer,
+                                       tournament=tournament_name)
+            return predictions
+        else:
+            trainer.train_model(params=params)
+            if save_model:
+                trainer.save_model_locally(key=saved_model_name)
+                trainer.save_to_s3(filename=saved_model_name,
+                                   key=saved_model_name)
+            predictions = trainer.make_predictions_and_prepare_submission(
+                tournament=tournament_name, submit=submit_to_numerai)
+            utils.evaluate_predictions(predictions=predictions,
+                                       trainer=trainer,
+                                       tournament=tournament_name)
+            return predictions
+
+
 def train_and_predict_voting_regressor_model(load_model: bool,
                                              save_model: bool,
                                              submit_to_numerai: bool,
@@ -218,59 +288,6 @@ def train_and_predict_stacking_regressor_model(load_model: bool,
             return predictions
 
 
-# def train_and_predict_functional_lstm_model(
-#         submit_to_numerai: bool = None) -> nx.Prediction:
-#     """Trains Functional LSTM model and saves weights"""
-
-#     tournaments, data = prepare_tournament_data()
-#     LOGGER.info(f'Training and making predictions for {tournaments}')
-#     for tournament_name in tournaments:
-#         model: nx.Model = trainers.train_and_save_functional_lstm_model(
-#             tournament=tournament_name,
-#             data=data,
-#             load_model=False,
-#             save_model=True,
-#             params=FLSTM_PARAMS)
-#         predictions: nx.Prediction = make_predictions_and_prepare_submission(
-#             model=model,
-#             model_name='functional_lstm',
-#             data=data,
-#             tournament=tournament_name)
-#         LOGGER.info(
-#             predictions.summaries(data['validation'],
-#                                   tournament=tournament_name))
-#         LOGGER.info(predictions[:, tournament_name].metric_per_era(
-#             data=data['validation'], tournament=tournament_name))
-
-#     return predictions
-
-# def train_and_predict_bidirectional_lstm_model(
-#         submit_to_numerai: bool = None) -> nx.Prediction:
-#     """Trains Bidirectional LSTM model and saves weights"""
-
-#     tournaments, data = prepare_tournament_data()
-#     LOGGER.info(f'Training and making predictions for {tournaments}')
-#     for tournament_name in tournaments:
-#         model: nx.Model = trainers.train_and_save_bidirectional_lstm_model(
-#             tournament=tournament_name,
-#             data=data,
-#             load_model=False,
-#             save_model=True,
-#             params=BILSTM_PARAMS)
-#         predictions: nx.Prediction = make_predictions_and_prepare_submission(
-#             model=model,
-#             model_name='bidirectional_lstm',
-#             data=data,
-#             tournament=tournament_name)
-#         LOGGER.info(
-#             predictions.summaries(data['validation'],
-#                                   tournament=tournament_name))
-#         LOGGER.info(predictions[:, tournament_name].metric_per_era(
-#             data=data['validation'], tournament=tournament_name))
-
-#     return predictions
-
-
 @click.command()
 @click.option('-m', '--model', type=str, default='xgboost')
 @click.option('-lm', '--load-model', type=bool, default=True)
@@ -319,12 +336,19 @@ def main(model: str, load_model: bool, save_model: bool,
                                             save_model=save_model,
                                             submit_to_numerai=submit,
                                             params=LSTM_PARAMS)
-    # if model == 'flstm':
-    #     FLSTM_PARAMS = {'epochs': 1, 'batch_size': 120}
-    #     return train_and_predict_functional_lstm_model(submit)
-    # if model == 'bilstm':
-    #     BILSTM_PARAMS = {'epochs': 1, 'batch_size': 120}
-    #     return train_and_predict_bidirectional_lstm_model(submit)
+    if model == 'funclstm':
+        FLSTM_PARAMS = {'epochs': 1, 'batch_size': 120}
+        return train_and_predict_funclstm_model(load_model=load_model,
+                                                save_model=save_model,
+                                                submit_to_numerai=submit,
+                                                params=FLSTM_PARAMS)
+    if model == 'bilstm':
+        BILSTM_PARAMS = {'epochs': 1, 'batch_size': 120}
+        return train_and_predict_bidirectional_lstm_model(
+            load_model=load_model,
+            save_model=save_model,
+            submit_to_numerai=submit,
+            params=BILSTM_PARAMS)
     if model == 'voting_regressor':
         return train_and_predict_voting_regressor_model(
             load_model=load_model,

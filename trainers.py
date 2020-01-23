@@ -284,15 +284,140 @@ class LSTMTrainer(Trainer):
 
 
 class FunctionalLSTMTrainer(Trainer):
-    pass
+    """Trains, serializes, loads, and conducts inference"""
+    def __init__(self, data=None, tournament=None, name='funclstm', gpu=None):
+        super().__init__(data=data, tournament=tournament, name=name)
+        self.data = data
+        self.tournament = tournament
+        self.name = name
+        self.gpu = gpu
+        self.model = None
+
+    def load_model_locally(self, key: str) -> None:
+        LOGGER.info(f"Using saved model for {self.tournament}")
+        self.model = models.FunctionalLSTMModel()
+        self.model.load(key)
+
+    def load_from_s3(self, filename: str, key: str) -> None:
+        self.model = models.FunctionalLSTMModel()
+        self.model.load_from_s3(filename=filename, key=key)
+        self.model = self.model.load(key)
+        LOGGER.info(
+            f"Trained model loaded from s3 bucket: {os.environ['BUCKET']}")
+
+    def train_model(self, params: Dict) -> None:
+        LOGGER.info(
+            f"Building FunctionalLSTMModel from scratch for {self.tournament}")
+        if self.gpu is not None:
+            LOGGER.info(f"Building model with {self.gpu} GPU's")
+        self.model = models.FunctionalLSTMModel(
+            time_steps=params['time_steps'], gpu=self.gpu)
+        LOGGER.info(f"Training FunctionalLSTM model for {self.tournament}")
+        eval_set = (self.data['validation'].x,
+                    self.data['validation'].y[self.tournament])
+        for i in range(params['epochs']):
+            self.model.fit(dfit=self.data['train'],
+                           tournament=self.tournament,
+                           eval_set=eval_set,
+                           epochs=1,
+                           batch_size=params['batch_size'])
+
+    def save_model_locally(self, key: str) -> None:
+        LOGGER.info(f"Saving model for {self.tournament} locally")
+        self.model.save(key)
+
+    def save_to_s3(self, filename: str, key: str) -> None:
+        LOGGER.info(f"Saving {self.name} for {self.tournament} to s3 bucket")
+        self.model.save_to_s3(filename=filename, key=key)
 
 
 class BidirectionalLSTMTrainer(Trainer):
-    pass
+    """Trains, serializes, loads, and conducts inference"""
+    def __init__(self, data=None, tournament=None, name='bilstm', gpu=None):
+        super().__init__(data=data, tournament=tournament, name=name)
+        self.data = data
+        self.tournament = tournament
+        self.name = name
+        self.gpu = gpu
+        self.model = None
+
+    def load_model_locally(self, key: str) -> None:
+        LOGGER.info(f"Using saved model for {self.tournament}")
+        self.model = models.BidirectionalLSTMModel()
+        self.model.load(key)
+
+    def load_from_s3(self, filename: str, key: str) -> None:
+        self.model = models.BidirectionalLSTMModel()
+        self.model.load_from_s3(filename=filename, key=key)
+        self.model = self.model.load(key)
+        LOGGER.info(
+            f"Trained model loaded from s3 bucket: {os.environ['BUCKET']}")
+
+    def train_model(self, params: Dict) -> None:
+        LOGGER.info(
+            f"Building BidirectionalLSTMModel from scratch for {self.tournament}"
+        )
+        if self.gpu is not None:
+            LOGGER.info(f"Building model with {self.gpu} GPU's")
+        self.model = models.BidirectionalLSTMModel(
+            time_steps=params['time_steps'], gpu=self.gpu)
+        LOGGER.info(f"Training BidirectionalLSTM model for {self.tournament}")
+        eval_set = (self.data['validation'].x,
+                    self.data['validation'].y[self.tournament])
+        for i in range(params['epochs']):
+            self.model.fit(dfit=self.data['train'],
+                           tournament=self.tournament,
+                           eval_set=eval_set,
+                           epochs=1,
+                           batch_size=params['batch_size'])
+
+    def save_model_locally(self, key: str) -> None:
+        LOGGER.info(f"Saving model for {self.tournament} locally")
+        self.model.save(key)
+
+    def save_to_s3(self, filename: str, key: str) -> None:
+        LOGGER.info(f"Saving {self.name} for {self.tournament} to s3 bucket")
+        self.model.save_to_s3(filename=filename, key=key)
 
 
 class LinearTrainer(Trainer):
-    pass
+    """Trains, serializes, loads, and conducts inference"""
+    def __init__(self, data=None, tournament=None, name='linear'):
+        super().__init__(data=data, tournament=tournament, name=name)
+        self.data = data
+        self.tournament = tournament
+        self.name = name
+        self.model = None
+
+    def load_model_locally(self, key: str) -> None:
+        LOGGER.info(f"Using saved model for {self.tournament}")
+        self.model = models.LinearModel()
+        self.model.load(key)
+
+    def load_from_s3(self, filename: str, key: str) -> None:
+        self.model = models.LinearModel()
+        self.model.load_from_s3(filename=filename, key=key)
+        self.model = self.model.load(key)
+        LOGGER.info(
+            f"Trained model loaded from s3 bucket: {os.environ['BUCKET']}")
+
+    def train_model(self, params: Dict) -> None:
+        LOGGER.info(f"Building LinearModel from scratch for {self.tournament}")
+        self.model = models.LinearModel()
+        LOGGER.info(f"Training LinearModel for {self.tournament}")
+        eval_set = [(self.data['validation'].x,
+                     self.data['validation'].y[self.tournament])]
+        self.model.fit(dfit=self.data['train'],
+                       tournament=self.tournament,
+                       eval_set=eval_set)
+
+    def save_model_locally(self, key: str) -> None:
+        LOGGER.info(f"Saving model for {self.tournament} locally")
+        self.model.save(key)
+
+    def save_to_s3(self, filename: str, key: str):
+        LOGGER.info(f"Saving {self.name} for {self.tournament} to s3 bucket")
+        self.model.save_to_s3(filename=filename, key=key)
 
 
 class VotingRegressorTrainer(Trainer):
@@ -370,92 +495,6 @@ class StackingRegressorTrainer(Trainer):
         LOGGER.info(f"Saving model for {self.tournament} locally")
         self.model.save(key)
 
-    def save_to_s3(self, filename: str, key: str):
+    def save_to_s3(self, filename: str, key: str) -> None:
         LOGGER.info(f"Saving {self.name} for {self.tournament} to s3 bucket")
         self.model.save_to_s3(filename=filename, key=key)
-
-
-def train_and_save_functional_lstm_model(tournament: str,
-                                         data: nx.data.Data,
-                                         load_model: bool,
-                                         save_model: bool,
-                                         params: Dict = None) -> nx.Model:
-    """Train and persist model weights"""
-
-    saved_model_name = f'functional_lstm_prediction_model_{tournament}'
-    if load_model:
-        LOGGER.info(f"using saved model for {tournament}")
-        model = models.FunctionalLSTMModel()
-        model.load_from_s3(filename=saved_model_name, key=saved_model_name)
-        model = model.load(saved_model_name)
-        LOGGER.info(f"Trained model loaded from s3")
-    else:
-        LOGGER.infp(
-            f"Building FunctionalLSTMModel from scratch for {tournament}")
-        model = models.FunctionalLSTMModel(time_steps=1)
-        LOGGER.info(f"Training Functional LSTM model for {tournament}")
-        eval_set = (data['validation'].x, data['validation'].y[tournament])
-        model.fit(dfit=data['train'],
-                  tournament=tournament,
-                  eval_set=eval_set,
-                  epochs=params['epochs'],
-                  batch_size=params['batch_size'])
-    if save_model:
-        LOGGER.info(f"Saving model for {tournament}")
-        model.save(saved_model_name)
-        LOGGER.info(f"Saving model for {tournament} to s3 bucket")
-        model.save_to_s3(filename=saved_model_name, key=saved_model_name)
-
-    return model
-
-
-def train_and_save_bidirectional_lstm_model(tournament: str,
-                                            data: nx.data.Data,
-                                            load_model: bool,
-                                            save_model: bool,
-                                            params: Dict = None) -> nx.Model:
-    """Trains Bidirectional LSTM model and saves weights"""
-
-    saved_model_name = f'bidirectional_lstm_prediction_model_{tournament}'
-    if load_model:
-        LOGGER.info(f"using saved model for {tournament}")
-        model = models.BidirectionalLSTMModel()
-        model.load_from_s3(filename=saved_model_name, key=saved_model_name)
-        model = model.load(saved_model_name)
-        LOGGER.info(f"Trained model loaded from s3")
-    else:
-        LOGGER.info(
-            f"Building BidirectionalLSTMModel from scratch for {tournament}")
-        model = models.BidirectionalLSTMModel(time_steps=1)
-        LOGGER.info(f"Training BidirectionalLSTM model for {tournament}")
-        eval_set = (data['validation'].x, data['validation'].y[tournament])
-        model.fit(dfit=data['train'],
-                  tournament=tournament,
-                  eval_set=eval_set,
-                  epochs=params['epochs'],
-                  batch_size=params['batch_size'])
-    if save_model:
-        LOGGER.info(f"Saving model for {tournament} locally")
-        model.save(saved_model_name)
-        LOGGER.info(f"Saving model for {tournament} to s3 bucket")
-        model.save_to_s3(filename=saved_model_name, key=saved_model_name)
-
-    return model
-
-
-def train_linear_model() -> None:
-    """Train model and save weights"""
-
-    tournaments, data = prepare_tournament_data()
-    LOGGER.info(tournaments)
-    for tournament_name in tournaments:
-        model = models.LinearModel()
-        try:
-            LOGGER.info(f"fitting model for {tournament_name}")
-            model.fit(data['train'], tournament_name)
-        except Exception as e:
-            LOGGER.error(f"Training failed with {e}")
-            raise e
-
-        LOGGER.info(f"saving model for {tournament_name}")
-        model.save(f'model_trained_{tournament_name}')
