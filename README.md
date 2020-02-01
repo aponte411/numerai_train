@@ -1,6 +1,6 @@
 # numerai_train
 
-This repository contains code to train, tune, and make/submit predictions using the Numerox API.
+This repository contains code to train, tune, and make/submit predictions using the Numerox API to the Numerai Data Science Tournament.
 
 https://docs.numer.ai/tournament/learn
 
@@ -36,7 +36,7 @@ The API has a few basic components that come together in the `predict.py` module
             'l2': 0.01,
             'iterations': 100
         }`
-- Use parameter a dictionary as an argument to `params=EXAMPLE_PARAMS` to the `train_and_predict_<model-name>_model()` function.
+- Use parameter dictionary as an argument to `params=EXAMPLE_PARAMS` to the `train_and_predict_<model-name>_model()` function.
 
 3. To then train, make predictions, and submit predictions run the following command. After training is complete the model weights will be saved to disk with the model name attached to it like this: `<model-name>_model_trained_<competition-name>`. You also have the option of saving the model to an s3 bucket (more on that below):
 - `python predict.py --model <model-name> --load-model <bool> --save-model <bool> --submit <bool>`
@@ -57,7 +57,7 @@ The API has a few basic components that come together in the `predict.py` module
 - `export NUMERAI_PUBLIC_ID=<public-id>`
 - `export NUMERAI_SECREY_KEY=<secret-key>`
 
-2. Set `--submit` parameter to True when running `python predict.py --submit`
+2. Set the `--submit` parameter to True when running `python predict.py --submit`
 
 # Running Tests
 

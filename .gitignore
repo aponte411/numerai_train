@@ -35,8 +35,14 @@ configs/polyaxon
 polyaxon_cpu.yaml
 polyaxon_gpu.yaml
 
-s3-key.json 
+s3-key.json
 
 .DS_Store
 
-.env
+*.env
+
+docker-compose.yml
+
+secret-values.yml
+
+train-models-0.0.1.tgz

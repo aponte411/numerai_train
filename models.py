@@ -248,7 +248,7 @@ class LSTMModel(nx.Model):
                                  validation_data=eval_generator,
                                  callbacks=self.callbacks)
         # only necessary for online/batch learning
-        self.model.reset_states()
+        # self.model.reset_states()
 
     def predict(self, dpre: nx.data.Data, tournament: str) -> nx.Prediction:
         """

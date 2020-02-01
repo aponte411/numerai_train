@@ -331,7 +331,12 @@ def main(model: str, load_model: bool, save_model: bool,
                                                 submit_to_numerai=submit,
                                                 params=CATBOOST_PARAMS)
     if model == 'lstm':
-        LSTM_PARAMS = {'epochs': 300, 'batch_size': 1, 'time_steps': 1}
+        LSTM_PARAMS = {
+            'training_epochs': 5,
+            'epochs': 120,
+            'batch_size': 1,
+            'time_steps': 1
+        }
         return train_and_predict_lstm_model(load_model=load_model,
                                             save_model=save_model,
                                             submit_to_numerai=submit,
