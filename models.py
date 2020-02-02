@@ -180,14 +180,15 @@ class LSTMModel(nx.Model):
             layers.LSTM(units=225,
                         activation='relu',
                         batch_input_shape=(1, self.time_steps, 310),
+                        return_sequences=True,
                         stateful=True))
-        # model.add(
-        #     layers.LSTM(units=200,
-        #                 batch_input_shape=(1, self.time_steps, 310),
-        #                 kernel_initializer='glorot_normal',
-        #                 activation='relu',
-        #                 stateful=True,
-        #                 return_sequences=False))
+        model.add(
+            layers.LSTM(units=200,
+                        batch_input_shape=(1, self.time_steps, 310),
+                        kernel_initializer='glorot_normal',
+                        activation='relu',
+                        stateful=True,
+                        return_sequences=False))
         model.add(
             layers.Dense(units=150,
                          kernel_initializer='glorot_normal',
