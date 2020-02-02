@@ -180,7 +180,7 @@ class LSTMModel(nx.Model):
             layers.LSTM(units=225,
                         activation='relu',
                         batch_input_shape=(1, self.time_steps, 310),
-                        stateful=True)
+                        stateful=True))
         # model.add(
         #     layers.LSTM(units=200,
         #                 batch_input_shape=(1, self.time_steps, 310),
