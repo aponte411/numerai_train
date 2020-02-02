@@ -1,0 +1,23 @@
+resources:
+  main:
+    requests:
+      cpu: 4
+      memory: 10000
+    limits:
+      cpu: 15
+      memory: 30000
+
+env:
+  NUMERAI_PUBLIC_ID:
+  NUMERAI_SECRET_KEY:
+  AWS_ACCESS_KEY_ID:
+  AWS_SECRET_ACCESS_KEY:
+  BUCKET:
+
+replicaCount: 1
+
+mainContainer:
+  image: numerai_train
+  tag: latest
+
+holdOn: True

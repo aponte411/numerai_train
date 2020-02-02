@@ -1,1 +1,0 @@
-docker run -it --name=numerai numerai_train python predict.py --model xgboost --submit True

@@ -180,11 +180,13 @@ class LSTMModel(nx.Model):
             layers.LSTM(units=225,
                         activation='relu',
                         input_shape=(self.time_steps, 310),
+                        stateful=True,
                         return_sequences=True))
         model.add(
             layers.LSTM(units=200,
                         kernel_initializer='glorot_normal',
                         activation='relu',
+                        stateful=True,
                         return_sequences=False))
         model.add(
             layers.Dense(units=150,
@@ -248,7 +250,7 @@ class LSTMModel(nx.Model):
                                  validation_data=eval_generator,
                                  callbacks=self.callbacks)
         # only necessary for online/batch learning
-        # self.model.reset_states()
+        self.model.reset_states()
 
     def predict(self, dpre: nx.data.Data, tournament: str) -> nx.Prediction:
         """
@@ -295,6 +297,8 @@ class LSTMModel(nx.Model):
                                              sampling_rate=1,
                                              batch_size=1)
         yhat = self.model.predict_generator(test_generator)
+        # only for online learning
+        self.model.reset_states()
 
         return dpre.ids, yhat
 

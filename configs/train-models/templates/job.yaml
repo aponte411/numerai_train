@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job 
+metadata:
+  name: train-models
+  {{ with .Values.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 -}}
+  {{ end }}
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: run-model
+        image: {{ .Values.mainContainer.image }}:{{ .Values.mainContainer.tag }}
+        imagePullPolicy: IfNotPresent
+        resources:
+          {{- toYaml .Values.resources.main | nindent 12 }}
+        env:
+          - name: NUMERAI_PUBLIC_ID
+            value: {{ .Values.env.NUMERAI_PUBLIC_ID}}
+          - name: NUMERAI_SECRET_KEY
+            value: {{ .Values.env.NUMERAI_SECRET_KEY}}
+          - name: AWS_ACCESS_KEY_ID
+            value: {{ .Values.env.AWS_ACCESS_KEY_ID}}
+          - name: AWS_SECRET_ACCESS_KEY
+            value: {{ .Values.env.AWS_SECRET_ACCESS_KEY}}
+          - name: BUCKET
+            value: {{ .Values.env.BUCKET}}
+      containers:
+      - name: check-if-alive
+        image: {{ .Values.mainContainer.image }}:{{ .Values.mainContainer.tag }}
+        imagePullPolicy: IfNotPresent
+        command: ["bash"]
+        {{- if .Values.holdOn }}
+        args: ["-c", "while true; do sleep 500; done"]
+        {{- else }}
+        args: ["-c", "echo \"COMPLETED BUILD\""]
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources.main | nindent 12 }}
+      restartPolicy: Never
+
